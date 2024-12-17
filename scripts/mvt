@@ -1,57 +1,59 @@
 #!/usr/bin/python3
 
 import rclpy
+import time 
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from kobuki_ros_interfaces.msg import BumperEvent
 
-def _20mvt():
-    rclpy.init()
-    aNode = Node("mouv20")
-    aPublisher = aNode.create_publisher(Twist, '/multi/cmd_nav', 10)
-    velocity = Twist()
-    velocity.linear.x = 0.5
-    velocity.angular.z = 1.0
-    for i in range(21): 
-        aPublisher.publish(velocity)
-        rclpy.spin_once(aNode, timeout_sec=0.5)
-    aNode.destroy_node()
-    rclpy.shutdown()
+# def _20mvt():
+#     rclpy.init()
+#     aNode = Node("mouv20")
+#     aPublisher = aNode.create_publisher(Twist, '/multi/cmd_nav', 10)
+#     velocity = Twist()
+#     velocity.linear.x = 0.5
+#     velocity.angular.z = 1.0
+#     for i in range(21): 
+#         aPublisher.publish(velocity)
+#         rclpy.spin_once(aNode, timeout_sec=0.5)
+#     aNode.destroy_node()
+#     rclpy.shutdown()
 
 def squaredMov():
     rclpy.init()
     aNode = Node("sqrMov")
-    for i in range(4):
-        ligneDroite(aNode)
-        rotation90(aNode)
+
+    talker = ROSTalker(aNode)
+    listener = ROSListener(aNode)
+    
+    rclpy.spin(aNode)
+
     aNode.destroy_node()
     rclpy.shutdown()
 
-def ligneDroite(aNode): 
-    aPublisher = aNode.create_publisher(Twist, '/multi/cmd_nav', 10)
-    velocity = Twist()
-    velocity.linear.x = 0.5
-    for i in range(3): 
-        aPublisher.publish(velocity)
-        rclpy.spin_once(aNode, timeout_sec=0.5)
-
-def rotation90(aNode):
-    aPublisher = aNode.create_publisher(Twist, '/multi/cmd_nav', 10)
-    velocity = Twist()
-    velocity.angular.z = 0.5
-    for i in range(7): 
-        aPublisher.publish(velocity)
-        rclpy.spin_once(aNode, timeout_sec=0.5)
 
 class ROSTalker:
     def __init__(self, rosNode):
         self._publisher = rosNode.create_publisher(Twist, '/multi/cmd_nav', 10)
-        self._timer = rosNode.create_timer(0.5, self.timer_callback)
+        self._timer = rosNode.create_timer(1, self.timer_callback)
 
     def timer_callback(self):
-        velocity = Twist()
-        velocity.linear.x = 0.5
-        velocity.angular.z = 1.0
-        self._publisher.publish(velocity)
+        vl = Twist()
+        vl.linear.x = 0.5
+        va = Twist()
+        va.angular.z = 1.0
+        self._publisher.publish(vl)
+        time.sleep(0.5)
+        self._publisher.publish(va)
+
+class ROSListener: 
+    def __init__(self, rosNode): 
+        self._logger = rosNode.get_logger()
+        self._subscription=rosNode.create_subscription(BumperEvent, '/events/bumper', self.listener_callback, 10)
+
+    def listener_callback(self, msg): 
+        if msg.state==1:
+            rclpy.shutdown()
 
 if __name__ == "__main__":
     squaredMov()
