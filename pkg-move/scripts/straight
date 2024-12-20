@@ -6,6 +6,7 @@ from geometry_msgs.msg import Twist
 from rclpy.node import Node
 
 obstacleDetec = "noScan"
+memory = "no"
 
 # Ros Node process:
 def main():
@@ -80,20 +81,36 @@ class StraightCtrl :
 
     def control_callback(self):
         self._logger.info( '< define control' )
-        global obstacleDetec
+        global obstacleDetec, memory
         velocity = Twist()
         if obstacleDetec == "no":
             velocity.linear.x = 0.2
             velocity.angular.z = 0.0
+            memory = "no"
         elif obstacleDetec == "left":
-            velocity.linear.x = 0.0
-            velocity.angular.z = -1.0
+            if(memory=="right" or memory =="both"): 
+                velocity.linear.x = 0.0
+                velocity.angular.z = 1.0
+            else : 
+                memory = "left"
+                velocity.linear.x = 0.0
+                velocity.angular.z = -1.0
         elif obstacleDetec == "right":
-            velocity.linear.x = 0.0
-            velocity.angular.z = 1.0
+            if(memory=="left"): 
+                velocity.linear.x = 0.0
+                velocity.angular.z = -1.0
+            else : 
+                memory="right"
+                velocity.linear.x = 0.0
+                velocity.angular.z = 1.0
         elif obstacleDetec == "both":
-            velocity.linear.x = 0.0
-            velocity.angular.z = 1.0
+            if(memory=="left"): 
+                velocity.linear.x = 0.0
+                velocity.angular.z = -1.0
+            else : 
+                memory="both"
+                velocity.linear.x = 0.0
+                velocity.angular.z = 1.0
         elif obstacleDetec == "noScan":
             velocity.linear.x = 0.0
             velocity.angular.z = 0.0
@@ -103,4 +120,4 @@ class StraightCtrl :
 
 # Go:
 if __name__ == '__main__' :
-    main()
+    #main()

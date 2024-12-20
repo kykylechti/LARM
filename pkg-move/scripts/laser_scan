@@ -4,22 +4,40 @@ import rclpy
 import math
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Point32
+from sensor_msgs.msg import PointCloud
+from std_msgs.msg import Header
 
-rosNode= None
+
+rosNode = None
 
 def scan_callback(scanMsg):
     global rosNode
+    publisherROS = rosNode.create_publisher( PointCloud, '/pointcloud', 10)
     obstacles= []
+
+    aheader = Header()
+    aheader.frame_id = 'base_link'
+
     angle= scanMsg.angle_min
+    aPointCloud = PointCloud()
+    
+    aPointCloud.header = aheader
+    aPoint2 = Point32()
     for aDistance in scanMsg.ranges :
         if(angle<0.78 and angle>-0.78) and (0.1 < aDistance and aDistance < 5.0) : #45° à -45° environ
             aPoint= [
                 math.cos(angle) * aDistance,
                 math.sin(angle) * aDistance
             ]
+            aPoint2.x = (float) (aPoint[0])
+            aPoint2.y = (float) (aPoint[1])
+            aPoint2.z = (float) (0.0)
+            aPointCloud.points.append(aPoint2)
             obstacles.append(aPoint)
         angle+= scanMsg.angle_increment
     sample= min(obstacles)
+    publisherROS.publish(aPointCloud)
     rosNode.get_logger().info( f" obs({len(obstacles)}) ...{sample}..." )
 
 '''rclpy.init()
