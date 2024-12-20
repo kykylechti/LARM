@@ -1,12 +1,19 @@
 #!/usr/bin/python3
 import rclpy
 import math
+import random
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
 
 obstacleDetec = "noScan"
 memory = "no"
+i = 0
+stop = 0
+speed = 0
+rotSpeed = 0
+defaultSpeed = 1.0
+defaultRotSpeed = 1.0
 
 # Ros Node process:
 def main():
@@ -24,6 +31,16 @@ def main():
     # clean end
     node.destroy_node()
     rclpy.shutdown()
+
+class ROSListener: 
+    def __init__(self, rosNode): 
+        self._logger = rosNode.get_logger()
+        self._subscription=rosNode.create_subscription(BumperEvent, '/events/bumper', self.listener_callback, 10)
+    
+    def listener_callback(self, msg):
+        global stop
+        if msg.state==1:
+            stop=1
 
 # Ros Node Class:
 class StraightCtrl :
@@ -50,7 +67,7 @@ class StraightCtrl :
     def scan_callback(self, scanMsg ):
         self._logger.info( '> get scan' )
 
-        global obstacleDetec
+        global obstacleDetec, i, speed, rotSpeed
 
         obstaclesLeft= []
         obstaclesRight= []
@@ -74,50 +91,59 @@ class StraightCtrl :
             obstacleDetec = "no"
         elif len(obstaclesLeft) != 0 and len(obstaclesRight) == 0:
             obstacleDetec = "left"
+            i = random.randint(1, 20)
+            rotSpeed = -1.0
         elif len(obstaclesLeft) == 0 and len(obstaclesRight) != 0:
             obstacleDetec = "right"
+            i = random.randint(1, 20)
+            rotSpeed = 1.0
         elif len(obstaclesLeft) != 0 and len(obstaclesRight) != 0:
             obstacleDetec = "both"
+            rotSpeed = 1.0
 
     def control_callback(self):
-        self._logger.info( '< define control' )
-        global obstacleDetec, memory
-        velocity = Twist()
-        if obstacleDetec == "no":
-            velocity.linear.x = 0.2
-            velocity.angular.z = 0.0
-            memory = "no"
-        elif obstacleDetec == "left":
-            if(memory=="right" or memory =="both"): 
+        global stop
+        if i=0:
+            self._logger.info( '< define control' )
+            global obstacleDetec, memory, i, speed, rotSpeed
+            velocity = Twist()
+            if i>0:
                 velocity.linear.x = 0.0
-                velocity.angular.z = 1.0
-            else : 
-                memory = "left"
+                velocity.angular.z = rotSpeed
+                i-=1
+            elif obstacleDetec == "no":
+                velocity.linear.x = defaultSpeed
+                velocity.angular.z = 0.0
+                memory = "no"
+            elif obstacleDetec == "left":
+                if(memory=="right" or memory =="both"): 
+                    velocity.linear.x = 0.0
+                    velocity.angular.z = defaultRotSpeed
+                else : 
+                    memory = "left"
+                    velocity.linear.x = 0.0
+                    velocity.angular.z = -defaultRotSpeed
+            elif obstacleDetec == "right":
+                if(memory=="left"): 
+                    velocity.linear.x = 0.0
+                    velocity.angular.z = -defaultRotSpeed
+                else : 
+                    memory="right"
+                    velocity.linear.x = 0.0
+                    velocity.angular.z = defaultRotSpeed
+            elif obstacleDetec == "both":
+                if(memory=="left"): 
+                    velocity.linear.x = 0.0
+                    velocity.angular.z = -defaultRotSpeed
+                else : 
+                    memory="both"
+                    velocity.linear.x = 0.0
+                    velocity.angular.z = defaultRotSpeed
+            elif obstacleDetec == "noScan":
                 velocity.linear.x = 0.0
-                velocity.angular.z = -1.0
-        elif obstacleDetec == "right":
-            if(memory=="left"): 
-                velocity.linear.x = 0.0
-                velocity.angular.z = -1.0
-            else : 
-                memory="right"
-                velocity.linear.x = 0.0
-                velocity.angular.z = 1.0
-        elif obstacleDetec == "both":
-            if(memory=="left"): 
-                velocity.linear.x = 0.0
-                velocity.angular.z = -1.0
-            else : 
-                memory="both"
-                velocity.linear.x = 0.0
-                velocity.angular.z = 1.0
-        elif obstacleDetec == "noScan":
-            velocity.linear.x = 0.0
-            velocity.angular.z = 0.0
-
-
-        self._pubVelocity.publish(velocity)
+                velocity.angular.z = 0.0
+            self._pubVelocity.publish(velocity)
 
 # Go:
 if __name__ == '__main__' :
-    #main()
+    main()
