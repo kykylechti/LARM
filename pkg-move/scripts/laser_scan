@@ -1,8 +1,33 @@
 #!/usr/bin/python3
 
 import rclpy
-import time 
+import math
 from rclpy.node import Node
-from geometry_msgs.msg import Twist
-from kobuki_ros_interfaces.msg import BumperEvent
 from sensor_msgs.msg import LaserScan
+
+rosNode= None
+
+def scan_callback(scanMsg):
+    global rosNode
+    obstacles= []
+    angle= scanMsg.angle_min
+    for aDistance in scanMsg.ranges :
+        if(angle<0.78 and angle>-0.78) and (0.1 < aDistance and aDistance < 5.0) : #45° à -45° environ
+            aPoint= [
+                math.cos(angle) * aDistance,
+                math.sin(angle) * aDistance
+            ]
+            obstacles.append(aPoint)
+        angle+= scanMsg.angle_increment
+    sample= min(obstacles)
+    rosNode.get_logger().info( f" obs({len(obstacles)}) ...{sample}..." )
+
+rclpy.init()
+rosNode= Node('scan_interpreter')
+rosNode.create_subscription( LaserScan, 'scan', scan_callback, 10)
+
+rclpy.spin( rosNode )
+
+scanInterpret.destroy_node()
+rclpy.shutdown()
+rosNode= None

@@ -88,4 +88,5 @@ class ROSListener:
             print(" : " + str(bumper_type) + ";" + str(bumper_state))
 
 if __name__ == "__main__":
-    squaredMov()
+#    squaredMov()
+    print("tkt")

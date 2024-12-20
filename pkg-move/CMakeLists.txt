@@ -26,4 +26,6 @@ endif()
 ament_package()
 
 install( PROGRAMS scripts/mvt DESTINATION lib/${PROJECT_NAME} )
+install( PROGRAMS scripts/laser_scan DESTINATION lib/${PROJECT_NAME} )
+install( PROGRAMS scripts/straight DESTINATION lib/${PROJECT_NAME} )
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/)
