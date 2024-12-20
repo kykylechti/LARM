@@ -1,6 +1,0 @@
-Invoking command in '/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/iron /usr/bin/cmake /home/l2e6/ros_space/uvlarm-wall-e -DCMAKE_INSTALL_PREFIX=/home/l2e6/ros_space/uvlarm-wall-e/install/pkg-mvt
-Invoked command in '/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/iron /usr/bin/cmake /home/l2e6/ros_space/uvlarm-wall-e -DCMAKE_INSTALL_PREFIX=/home/l2e6/ros_space/uvlarm-wall-e/install/pkg-mvt
-Invoking command in '/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/iron /usr/bin/cmake --build /home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt -- -j8 -l8
-Invoked command in '/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/iron /usr/bin/cmake --build /home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt -- -j8 -l8
-Invoking command in '/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/iron /usr/bin/cmake --install /home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt
-Invoked command in '/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/iron /usr/bin/cmake --install /home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt
