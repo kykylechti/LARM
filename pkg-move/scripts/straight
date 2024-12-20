@@ -4,6 +4,8 @@ from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
 
+obstacleDetec = "noScan"
+
 # Ros Node process:
 def main():
     # Initialize ROS and a ROS node
@@ -48,6 +50,26 @@ class StraightCtrl :
 
     def control_callback(self):
         self._logger.info( '< define control' )
+        global obstacleDetec
+        velocity = Twist()
+        if obstacleDetec == "no":
+            velocity.linear.x = 0.2
+            velocity.angular.z = 0.0
+        elif obstacleDetec == "left":
+            velocity.linear.x = 0.0
+            velocity.angular.z = -1.0
+        elif obstacleDetec == "right":
+            velocity.linear.x = 0.0
+            velocity.angular.z = 1.0
+        elif obstacleDetec == "both":
+            velocity.linear.x = 0.0
+            velocity.angular.z = 1.0
+        elif obstacleDetec == "noScan":
+            velocity.linear.x = 0.0
+            velocity.angular.z = 0.0
+
+
+        self._pubVelocity.publish(velocity)
 
 # Go:
 if __name__ == '__main__' :
