@@ -1,4 +1,0 @@
-launch:
-    - node:
-        pkg: "pkg-mvt"
-        exec: "mvt"
