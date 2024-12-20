@@ -1,0 +1,7 @@
+launch:
+    - node:
+        pkg: "uvlarm-wall-e"
+        exec: "mvt"
+    - node:
+        pkg: "uvlarm-wall-e"
+        exec: "laser_scan"
