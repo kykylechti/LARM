@@ -1,9 +1,0 @@
-/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt/CMakeFiles/uninstall.dir
-/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt/CMakeFiles/pkg-mvt_uninstall.dir
-/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt/CMakeFiles/test.dir
-/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt/CMakeFiles/edit_cache.dir
-/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt/CMakeFiles/rebuild_cache.dir
-/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt/CMakeFiles/list_install_components.dir
-/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt/CMakeFiles/install.dir
-/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt/CMakeFiles/install/local.dir
-/home/l2e6/ros_space/uvlarm-wall-e/build/pkg-mvt/CMakeFiles/install/strip.dir
