@@ -22,7 +22,7 @@ def scan_callback(scanMsg):
     sample= min(obstacles)
     rosNode.get_logger().info( f" obs({len(obstacles)}) ...{sample}..." )
 
-rclpy.init()
+'''rclpy.init()
 rosNode= Node('scan_interpreter')
 rosNode.create_subscription( LaserScan, 'scan', scan_callback, 10)
 
@@ -30,4 +30,4 @@ rclpy.spin( rosNode )
 
 scanInterpret.destroy_node()
 rclpy.shutdown()
-rosNode= None
+rosNode= None'''

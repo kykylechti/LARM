@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import rclpy
+import math
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
@@ -47,6 +48,35 @@ class StraightCtrl :
 
     def scan_callback(self, scanMsg ):
         self._logger.info( '> get scan' )
+
+        global obstacleDetec
+
+        obstaclesLeft= []
+        obstaclesRight= []
+        angle= scanMsg.angle_min
+        for aDistance in scanMsg.ranges :
+            if(angle<1.0 and angle>0.0) and (0.05 < aDistance and aDistance < 0.25) : #45° à -45° environ
+                aPoint= [
+                    math.cos(angle) * aDistance,
+                    math.sin(angle) * aDistance
+                ]
+                obstaclesLeft.append(aPoint)
+            if(angle<0.0 and angle>-1.0) and (0.05 < aDistance and aDistance < 0.25) : #45° à -45° environ
+                aPoint= [
+                    math.cos(angle) * aDistance,
+                    math.sin(angle) * aDistance
+                ]
+                obstaclesRight.append(aPoint)
+            angle+= scanMsg.angle_increment
+        
+        if len(obstaclesLeft) == 0 and len(obstaclesRight) == 0:
+            obstacleDetec = "no"
+        elif len(obstaclesLeft) != 0 and len(obstaclesRight) == 0:
+            obstacleDetec = "left"
+        elif len(obstaclesLeft) == 0 and len(obstaclesRight) != 0:
+            obstacleDetec = "right"
+        elif len(obstaclesLeft) != 0 and len(obstaclesRight) != 0:
+            obstacleDetec = "both"
 
     def control_callback(self):
         self._logger.info( '< define control' )
