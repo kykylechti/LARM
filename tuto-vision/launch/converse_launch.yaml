@@ -1,0 +1,4 @@
+launch:
+    - node:
+        pkg: "tuto-vision"
+        exec: "vision"
