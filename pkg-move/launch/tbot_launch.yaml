@@ -1,10 +1,4 @@
 launch:
-    - node:
-        pkg: "pkg-move"
-        exec: "mvt"
-    - node:
-        pkg: "pkg-move"
-        exec: "laser_scan"
     - node: 
         pkg: "pkg-move"
-        exec: "straight"
+        exec: "direct_robot"

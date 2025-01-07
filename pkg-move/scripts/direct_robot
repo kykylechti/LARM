@@ -12,6 +12,8 @@ i = 0                       # Rotations aléatoires à effectuer
 stop = 0                    # Arrêt d'urgence
 defaultSpeed = 0.5          # Vitesse par défaut 
 defaultRotSpeed = 1.0       # Vitesse de rotation par défaut
+memory='no'
+
 
 # Arrêt d'urgence par bumper
 class ROSListener: 
@@ -53,13 +55,13 @@ class StraightCtrl:
         obstaclesRight= []
         angle= scanMsg.angle_min
         for aDistance in scanMsg.ranges :
-            if(angle<1.0 and angle>0.0) and (0.05 < aDistance and aDistance < 0.25) : #-57° à 0° environ
+            if(angle<1.5 and angle>0.0) and (0.05 < aDistance and aDistance < 0.3) : #-57° à 0° environ
                 aPoint= [
                     math.cos(angle) * aDistance,
                     math.sin(angle) * aDistance
                 ]
                 obstaclesLeft.append(aPoint)
-            if(angle<0.0 and angle>-1.0) and (0.05 < aDistance and aDistance < 0.25) : #0° à 57° environ
+            if(angle<0.0 and angle>-1.5) and (0.05 < aDistance and aDistance < 0.3) : #0° à 57° environ
                 aPoint= [
                     math.cos(angle) * aDistance,
                     math.sin(angle) * aDistance
@@ -80,11 +82,9 @@ class StraightCtrl:
 
     def control_callback(self):
         self._logger.info( '< define control' )
-        global obstacleDetec, i
-
-        memory='no'
+        global obstacleDetec, i, memory
         # Dès qu'on change d'état, la mémoire change (si l'obstacle a été détecté à droite en premier il continue de tourner à gauche et inversement)
-        if (memory=='no' and (obstacleDetec=='left' or obstacleDetec=='right'))and ((memory=='left' or memory=='right') and obstacleDetec=='no'): 
+        if (memory=='no' and (obstacleDetec=='left' or obstacleDetec=='right')) or ((memory=='left' or memory=='right') and obstacleDetec=='no'): 
             memory=obstacleDetec
         # Si jamais il est détecté des deux cotés en même temps
         elif (obstacleDetec=='both' and memory=='no'): 
@@ -105,7 +105,7 @@ class StraightCtrl:
             velocity.linear.x = 0.0
             velocity.angular.z = defaultRotSpeed
         elif memory =='both':                               # Tourner à gauche pendant une durée aléatoire
-            i=random.randint(5, 30)
+            i=random.randint(5, 20)
             velocity.linear.x = 0.0
             velocity.angular.z = -defaultRotSpeed
             memory='no'
