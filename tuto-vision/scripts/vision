@@ -6,6 +6,10 @@ import signal, time, numpy as np
 import sys, cv2, rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+import numpy as np
+import matplotlib.pyplot as plt
+from cv2 import calcHist
+
 
 isOk= True
 def signalInteruption(signum, frame):
@@ -23,8 +27,8 @@ def process_img(args=None):
     
     while isOk:
         # rsNode.read_imgs()
-        rsNode.publish_imgs()
-        rclpy.spin_once(rsNode, timeout_sec=1)
+        rsNode.analyse_imgs()
+        rclpy.spin_once(rsNode, timeout_sec=0.1)
 
 
     # Stop streaming
@@ -33,6 +37,13 @@ def process_img(args=None):
     # Clean end
     rsNode.destroy_node()
     rclpy.shutdown()
+
+def sum_gpixels(g, value):
+    index = 0
+    for i in range(848): 
+        for j in range(480):
+            index += g[j][i]
+    return index
 
 # Realsense Node:
 class Realsense(Node):
@@ -46,17 +57,22 @@ class Realsense(Node):
         config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 60)
         self.pipeline.start(config)
 
-        
-
-    def read_imgs(self):
-        pass
-
-    def publish_imgs(self):
+    def analyse_imgs(self):
         self.frames = self.pipeline.wait_for_frames()
         color_frame = self.frames.first(rs.stream.color)
         color_image = np.asanyarray(color_frame.get_data())
 
         self.bridge=CvBridge()
+
+        b,g,r = cv2.split(color_image)
+        #hist = calcHist(color_image, [1], None, [256], [0, 256])
+        #plt.plot(hist, color='g') 
+        #plt.title('Histogramme vert') 
+        #plt.show()
+        resg = sum_gpixels(g, 200)
+        resb = sum_gpixels(b, 200)
+        resr = sum_gpixels(r, 200)
+        print(2*resg-resb-resr)
 
         msg_image = self.bridge.cv2_to_imgmsg(color_image,"bgr8")
         msg_image.header.stamp = self.get_clock().now().to_msg()
