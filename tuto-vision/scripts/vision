@@ -7,6 +7,7 @@ import sys, cv2, rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 import numpy as np
+import matplotlib.pyplot as plt
 from cv2 import calcHist
 
 
@@ -16,18 +17,6 @@ def signalInteruption(signum, frame):
     print( "\nCtrl-c pressed" )
     isOk= False
 
-def voisins10(tab):
-    value = np.ones((10,1), dtype = int)
-    index = np.zeros((10,2), dtype = int)
-    value *= 2500
-
-    for i in range(100,748): 
-        for j in range(100,380):
-            if tab[j][i]<np.max(value):
-                value[np.argmax(value)]=tab[j][i]
-                index[np.argmax(value)]=[j,i]
-    return index
-                
     return index
 # Node processes:
 def process_img(args=None):
@@ -48,13 +37,6 @@ def process_img(args=None):
     # Clean end
     rsNode.destroy_node()
     rclpy.shutdown()
-
-def sum_gpixels(g, value):
-    index = 0
-    for i in range(848): 
-        for j in range(480):
-            index += g[j][i]
-    return index
 
 # Realsense Node:
 class Realsense(Node):
@@ -80,7 +62,7 @@ class Realsense(Node):
         #plt.plot(hist, color='g') 
         #plt.title('Histogramme vert') 
         #plt.show()
-        
+
         msg_image = self.bridge.cv2_to_imgmsg(color_image,"bgr8")
         msg_image.header.stamp = self.get_clock().now().to_msg()
         msg_image.header.frame_id = "image"
@@ -91,41 +73,9 @@ class Realsense(Node):
         
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
-        tab = voisins10(depth_image)
-        for i in range(5):
-            print(g[tab[i][0]][tab[i][1]])
-
-        print("=========================")
         msg_depth = self.bridge.cv2_to_imgmsg(depth_colormap,"bgr8")
         msg_depth.header.stamp = msg_image.header.stamp
         msg_depth.header.frame_id = "depth"
         self.depth_publisher.publish(msg_depth)
-
-        lo=np.array([50, 100, 50])
-        hi=np.array([60, 255,255])
-        kernel = np.ones((7, 7), np.uint8)
-        color_info=(0, 0, 255)
-
-        image=cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
-        mask=cv2.inRange(image, lo, hi)
-        mask=cv2.erode(mask, kernel, iterations=1)
-        mask=cv2.dilate(mask, kernel, iterations=1)
-        image2=cv2.bitwise_and(color_image, color_image, mask= mask)
-
-        elements=cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-        if len(elements) > 0:
-            c=max(elements, key=cv2.contourArea)
-            ((x, y), rayon)=cv2.minEnclosingCircle(c)
-            if rayon>30:
-                cv2.circle(image2, (int(x), int(y)), int(rayon), color_info, 2)
-                cv2.circle(color_image, (int(x), int(y)), 5, color_info, 10)
-                cv2.line(color_image, (int(x), int(y)), (int(x)+150, int(y)), color_info, 2)
-                cv2.putText(color_image, "Objet !!!", (int(x)+10, int(y) -10), cv2.FONT_HERSHEY_DUPLEX, 1, color_info, 1, cv2.LINE_AA)
-
-
-
-        cv2.imshow('Camera', color_image)
-        cv2.imshow('image2', image2)
-        cv2.imshow('Mask', mask)
 
 process_img()
