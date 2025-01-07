@@ -10,7 +10,9 @@ obstacleDetec = "noScan"    # Détection des obstacles
 memory = "no"               # Détection précédente différente de la détection actuelle
 i = 0                       # Rotations aléatoires à effectuer
 stop = 0                    # Arrêt d'urgence
-defaultSpeed = 0.5          # Vitesse par défaut 
+speed = 0.0
+rotSpeed = 0.0
+defaultSpeed = 0.7          # Vitesse par défaut 
 defaultRotSpeed = 1.0       # Vitesse de rotation par défaut
 memory='no'
 
@@ -49,25 +51,35 @@ class StraightCtrl:
 
     def scan_callback(self, scanMsg ):
         self._logger.info( '> get scan' )
-        global obstacleDetec, i
+        global obstacleDetec, i, defaultSpeed, speed, rotSpeed
 
         obstaclesLeft= []
         obstaclesRight= []
+        distObstacle = []
         angle= scanMsg.angle_min
         for aDistance in scanMsg.ranges :
-            if(angle<1.5 and angle>0.0) and (0.05 < aDistance and aDistance < 0.3) : #-57° à 0° environ
+            if(angle<1.5 and angle>0.0) and (0.05 < aDistance and aDistance < 0.6) : #-57° à 0° environ
                 aPoint= [
                     math.cos(angle) * aDistance,
                     math.sin(angle) * aDistance
                 ]
                 obstaclesLeft.append(aPoint)
-            if(angle<0.0 and angle>-1.5) and (0.05 < aDistance and aDistance < 0.3) : #0° à 57° environ
+            if(angle<0.0 and angle>-1.5) and (0.05 < aDistance and aDistance < 0.6) : #0° à 57° environ
                 aPoint= [
                     math.cos(angle) * aDistance,
                     math.sin(angle) * aDistance
                 ]
                 obstaclesRight.append(aPoint)
+            if(angle<1.3 and angle>-1.3) and (0.05 < aDistance and aDistance < 0.7) : #diminution de la vitesse en fonction des obstacles
+                distObstacle.append(aDistance)
             angle+= scanMsg.angle_increment
+        
+        if(len(distObstacle)!=0):
+            minDist = min(distObstacle)
+        else:
+            minDist = 0.7
+        speed = abs(defaultSpeed - (0.7-minDist)/(0.6/defaultSpeed))
+        rotSpeed = abs((0.6- minDist)/(0.4/defaultRotSpeed))
         
         if len(obstaclesLeft) == 0 and len(obstaclesRight) == 0:    # pas d'obstacles détectés dans la zone
             obstacleDetec = "no"
@@ -82,7 +94,7 @@ class StraightCtrl:
 
     def control_callback(self):
         self._logger.info( '< define control' )
-        global obstacleDetec, i, memory
+        global obstacleDetec, i, memory, speed
         # Dès qu'on change d'état, la mémoire change (si l'obstacle a été détecté à droite en premier il continue de tourner à gauche et inversement)
         if (memory=='no' and (obstacleDetec=='left' or obstacleDetec=='right')) or ((memory=='left' or memory=='right') and obstacleDetec=='no'): 
             memory=obstacleDetec
@@ -92,22 +104,22 @@ class StraightCtrl:
 
         velocity = Twist()                                  # initialisation du Twist
         if i!=0:
-            velocity.linear.x = 0.0
-            velocity.angular.z = -defaultRotSpeed
+            velocity.linear.x = speed
+            velocity.angular.z = -rotSpeed
             i-=1
         elif memory == 'no':                                # Aller tout droit
-            velocity.linear.x = defaultSpeed
+            velocity.linear.x = speed
             velocity.angular.z = 0.0
         elif memory == 'left':                              # Tourner à droite
-            velocity.linear.x = 0.0
-            velocity.angular.z = -defaultRotSpeed
+            velocity.linear.x = speed
+            velocity.angular.z = -rotSpeed
         elif memory == 'right':                             # Tourner à gauche
-            velocity.linear.x = 0.0
-            velocity.angular.z = defaultRotSpeed
+            velocity.linear.x = speed
+            velocity.angular.z = rotSpeed
         elif memory =='both':                               # Tourner à gauche pendant une durée aléatoire
             i=random.randint(5, 20)
-            velocity.linear.x = 0.0
-            velocity.angular.z = -defaultRotSpeed
+            velocity.linear.x = speed
+            velocity.angular.z = -rotSpeed
             memory='no'
 
         self._pubVelocity.publish(velocity)
