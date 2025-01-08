@@ -11,3 +11,10 @@ launch:
     param: 
     - { name: "color", value: 55 }
     - { name: "rayon_detec", value: 10 }
+- node:
+    pkg: "rviz2"
+    exec: "rviz2"
+    name: "rviz2"
+
+- executable:
+    cmd: gnome-terminal --tab 'rviz2 ~/ros_space/uvlarm-wall-e/grp_pibot26/launch/rviz_config/vision_config.rviz'
