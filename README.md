@@ -4,9 +4,9 @@ Projet robot en UV LARM
 ## Challenge 1
 
 Installation nécessaire de pyrealsense2
-'''
+```
 $ pip install pyrealsense2
-'''
+```
 
 ### Déplacement
 Le robot est capable de se déplacer dans tout l'espace, sans se bloquer et sans n'avoir besoin de s'arrêter.
