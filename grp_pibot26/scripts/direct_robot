@@ -8,9 +8,6 @@ from rclpy.node import Node
 from kobuki_ros_interfaces.msg import BumperEvent
 from kobuki_ros_interfaces.msg import WheelDropEvent
 from kobuki_ros_interfaces.msg import ButtonEvent
-from kobuki_ros_interfaces.msg import Sound
-from std_msgs.msg import String
-
 
 
 obstacleDetec = "noScan"    # Détection des obstacles
@@ -47,11 +44,9 @@ class StraightCtrl:
         # Redémarrer après un arrêt d'urgence
         self._button = rosNode.create_subscription(ButtonEvent, '/events/button', self.button_callback, 10)
 
-        #self._detec = rosNode.create_subscription(String, '/detection_objet', self.detec_callback, 10)
-        #self._sound = rosNode.create_publisher(Sound, '/commands/sound', 10)
 
     def scan_callback(self, scanMsg ):
-        #self._logger.info( '> get scan' )
+        self._logger.info( '> get scan' )
 
         global obstacleDetec, i, defaultSpeed, speed, rotSpeed
 
@@ -107,16 +102,9 @@ class StraightCtrl:
         global stop
         if msg.state==1:
             stop=0
-
-    #def detec_callback(self, msg):
-    #    sound=Sound()
-    #    if msg=='trouve':
-    #        sound=5
     
-
     def control_callback(self):
         self._logger.info( '< define control' )
-        #self._logger.info( 'stop : ' + stop)
 
         global obstacleDetec, i, memory, speed, stop
         # Dès qu'on change d'état, la mémoire change (si l'obstacle a été détecté à droite en premier il continue de tourner à gauche et inversement)
@@ -148,7 +136,6 @@ class StraightCtrl:
                 velocity.angular.z = -rotSpeed
                 memory='no'
         else :
-            print(stop)
             velocity.linear.x = 0.0
             velocity.angular.z = 0.0
 
