@@ -5,28 +5,24 @@ import random
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
+from kobuki_ros_interfaces.msg import BumperEvent
+from kobuki_ros_interfaces.msg import WheelDropEvent
+from kobuki_ros_interfaces.msg import ButtonEvent
+from kobuki_ros_interfaces.msg import Sound
+from std_msgs.msg import String
+
+
 
 obstacleDetec = "noScan"    # Détection des obstacles
 memory = "no"               # Détection précédente différente de la détection actuelle
 i = 0                       # Rotations aléatoires à effectuer
 stop = 0                    # Arrêt d'urgence
-speed = 0.0
-rotSpeed = 0.0
+speed = 0.0                 # Vitesse linéaire
+rotSpeed = 0.0              # Vitesse de rotation
 defaultSpeed = 0.7          # Vitesse par défaut 
 defaultRotSpeed = 1.0       # Vitesse de rotation par défaut
-memory='no'
+memory='no'                 # Etat précédent de détection
 
-
-# Arrêt d'urgence par bumper
-class ROSListener: 
-    def __init__(self, rosNode): 
-        self._logger = rosNode.get_logger()
-        self._subscription=rosNode.create_subscription(BumperEvent, '/events/bumper', self.listener_callback, 10)
-    
-    def listener_callback(self, msg):
-        global stop
-        if msg.state==1:
-            stop=1
 
 class StraightCtrl:
     def initializeRosNode(self, rosNode ):
@@ -39,18 +35,24 @@ class StraightCtrl:
         )
 
         # Initialize scan callback:
-        self._subToScan= rosNode.create_subscription(
-            LaserScan, 'scan',
-            self.scan_callback, 10
-        )
+        self._subToScan = rosNode.create_subscription(LaserScan, 'scan', self.scan_callback, 10)
 
         # Initialize control callback:
         self._timForCtrl= rosNode.create_timer(
             0.05, self.control_callback
         )
+        # Arrêts d'urgence
+        self._bumper = rosNode.create_subscription(BumperEvent, '/events/bumper', self.bumper_callback, 10)
+        self._wheel = rosNode.create_subscription(WheelDropEvent, '/events/wheel_drop', self.wheel_callback, 10)
+        # Redémarrer après un arrêt d'urgence
+        self._button = rosNode.create_subscription(ButtonEvent, '/events/button', self.button_callback, 10)
+
+        #self._detec = rosNode.create_subscription(String, '/detection_objet', self.detec_callback, 10)
+        #self._sound = rosNode.create_publisher(Sound, '/commands/sound', 10)
 
     def scan_callback(self, scanMsg ):
-        self._logger.info( '> get scan' )
+        #self._logger.info( '> get scan' )
+
         global obstacleDetec, i, defaultSpeed, speed, rotSpeed
 
         obstaclesLeft= []
@@ -91,10 +93,32 @@ class StraightCtrl:
             obstacleDetec = "both"
 
             
+    def bumper_callback(self, msg):
+        global stop
+        if msg.state==1:
+            stop=1
+    
+    def wheel_callback(self, msg):
+        global stop
+        if msg.state==1:
+            stop=1
+
+    def button_callback(self, msg):
+        global stop
+        if msg.state==1:
+            stop=0
+
+    #def detec_callback(self, msg):
+    #    sound=Sound()
+    #    if msg=='trouve':
+    #        sound=5
+    
 
     def control_callback(self):
         self._logger.info( '< define control' )
-        global obstacleDetec, i, memory, speed
+        #self._logger.info( 'stop : ' + stop)
+
+        global obstacleDetec, i, memory, speed, stop
         # Dès qu'on change d'état, la mémoire change (si l'obstacle a été détecté à droite en premier il continue de tourner à gauche et inversement)
         if (memory=='no' and (obstacleDetec=='left' or obstacleDetec=='right')) or ((memory=='left' or memory=='right') and obstacleDetec=='no'): 
             memory=obstacleDetec
@@ -103,28 +127,33 @@ class StraightCtrl:
             memory='both'
 
         velocity = Twist()                                  # initialisation du Twist
-        if i!=0:
-            velocity.linear.x = speed
-            velocity.angular.z = -rotSpeed
-            i-=1
-        elif memory == 'no':                                # Aller tout droit
-            velocity.linear.x = speed
+        if stop==0 : 
+            print(stop)
+            if i!=0:
+                velocity.linear.x = speed
+                velocity.angular.z = -rotSpeed
+                i-=1
+            elif memory == 'no':                                # Aller tout droit
+                velocity.linear.x = speed
+                velocity.angular.z = 0.0
+            elif memory == 'left':                              # Tourner à droite
+                velocity.linear.x = speed
+                velocity.angular.z = -rotSpeed
+            elif memory == 'right':                             # Tourner à gauche
+                velocity.linear.x = speed
+                velocity.angular.z = rotSpeed
+            elif memory =='both':                               # Tourner à gauche pendant une durée aléatoire
+                i=random.randint(5, 20)
+                velocity.linear.x = speed
+                velocity.angular.z = -rotSpeed
+                memory='no'
+        else :
+            print(stop)
+            velocity.linear.x = 0.0
             velocity.angular.z = 0.0
-        elif memory == 'left':                              # Tourner à droite
-            velocity.linear.x = speed
-            velocity.angular.z = -rotSpeed
-        elif memory == 'right':                             # Tourner à gauche
-            velocity.linear.x = speed
-            velocity.angular.z = rotSpeed
-        elif memory =='both':                               # Tourner à gauche pendant une durée aléatoire
-            i=random.randint(5, 20)
-            velocity.linear.x = speed
-            velocity.angular.z = -rotSpeed
-            memory='no'
 
         self._pubVelocity.publish(velocity)
     
-
 def main():
     global defaultSpeed, defaultRotSpeed
     # Initialisation du noeud
