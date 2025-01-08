@@ -131,8 +131,11 @@ def main():
     rclpy.init()
     node = Node( "mv_control" )
 
-    defaultSpeed = node.get_parameter("defaultSpeed").value
-    defaultRotSpeed = speed.get_parameter("defaultRotSpeed").value
+    node.declare_parameter('defaultSpeed', 0.7)
+    node.declare_parameter('defaultRotSpeed', 1.0)
+
+    defaultSpeed = node.get_parameter('defaultSpeed').value
+    defaultRotSpeed = node.get_parameter('defaultRotSpeed').value
 
     # Appel du contrôle
     control= StraightCtrl()

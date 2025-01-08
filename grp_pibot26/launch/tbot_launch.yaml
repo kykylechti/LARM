@@ -1,12 +1,10 @@
 launch:
-    - node: 
-        pkg: "grp_pibot26"
-        exec: "direct_robot"
-        name: "mv_control"
-        param: 
-        - { name: "defaultSpeed", value: 0.7 }
-        - { name: "defaultRotSpeed", value: 1.0 }
-    - node:
-        pkg: "grp_pibot26"
-        exec: "vision"
-        name: "object_detection"
+- node: 
+    pkg: "grp_pibot26"
+    exec: "direct_robot"
+    param: 
+    - { name: "defaultSpeed", value: 0.7 }
+    - { name: "defaultRotSpeed", value: 1.0 }
+- node:
+    pkg: "grp_pibot26"
+    exec: "vision"
