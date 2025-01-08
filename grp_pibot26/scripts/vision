@@ -18,11 +18,16 @@ def signalInteruption(signum, frame):
 
 # Node processes:
 def process_img(args=None):
-    global isOk
+    global isOk, color, rayon_detec
     rclpy.init(args=args)
     rsNode= Realsense()
-  
     
+    rsNode.declare_parameter('color', 55)
+    color = rsNode.get_parameter('color').value
+    
+    rsNode.declare_parameter('rayon_detec', 10)
+    rayon_detec = rsNode.get_parameter('rayon_detec').value
+
     while isOk:
         # rsNode.read_imgs()
         rsNode.analyse_imgs()
@@ -50,14 +55,15 @@ class Realsense(Node):
         self.pipeline.start(config)
 
     def analyse_imgs(self):
+        global color, rayon_detec
         self.frames = self.pipeline.wait_for_frames()
         color_frame = self.frames.first(rs.stream.color)
         color_image = np.asanyarray(color_frame.get_data())
 
         self.bridge=CvBridge()
 
-        lo=np.array([50, 100, 50])
-        hi=np.array([60, 255,255])
+        lo=np.array([color-5, 100, 50])
+        hi=np.array([color+5, 255,255])
         kernel = np.ones((7, 7), np.uint8)
         color_info=(0, 0, 255)
 
@@ -76,7 +82,7 @@ class Realsense(Node):
         if len(elements) > 0:
             c=max(elements, key=cv2.contourArea)
             ((x, y), rayon)=cv2.minEnclosingCircle(c)
-            if rayon>10:
+            if rayon>rayon_detec:
                 cv2.circle(image2, (int(x), int(y)), int(rayon), color_info, 2)
                 cv2.circle(color_image, (int(x), int(y)), 5, color_info, 10)
                 cv2.line(color_image, (int(x), int(y)), (int(x)+150, int(y)), color_info, 2)

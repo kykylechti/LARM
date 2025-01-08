@@ -8,3 +8,6 @@ launch:
 - node:
     pkg: "grp_pibot26"
     exec: "vision"
+    param: 
+    - { name: "color", value: 55 }
+    - { name: "rayon_detec", value: 10 }
