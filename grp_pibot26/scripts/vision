@@ -7,6 +7,7 @@ import sys, cv2, rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
+from kobuki_ros_interfaces.msg import Sound
 import numpy as np
 
 
@@ -48,6 +49,7 @@ class Realsense(Node):
         self.image_publisher = self.create_publisher(Image, '/sensor_image', 10)
         self.detec_publisher = self.create_publisher(String, '/detection_objet', 10)
         self.depth_publisher = self.create_publisher(Image, '/sensor_depth', 10)
+        self.sound_publisher = self.create_publisher(Sound, '/commands/sound', 10)
         self.pipeline = rs.pipeline()
         config = rs.config()
         config.enable_stream(rs.stream.color, 848, 480, rs.format.bgr8, 60)
@@ -89,6 +91,9 @@ class Realsense(Node):
                 cv2.putText(color_image, "Objet !!!", (int(x)+10, int(y) -10), cv2.FONT_HERSHEY_DUPLEX, 1, color_info, 1, cv2.LINE_AA)
                 msg = String()
                 msg.data = "trouve"
+                sound = Sound()
+                sound.value=4
+                self.sound_publisher.publish(sound)
                 self.detec_publisher.publish(msg)
 
         msg_image = self.bridge.cv2_to_imgmsg(color_image,"bgr8")
