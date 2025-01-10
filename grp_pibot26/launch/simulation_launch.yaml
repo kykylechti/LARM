@@ -1,0 +1,20 @@
+
+
+launch:
+
+- include:
+    file: "$(find-pkg-share tbot_sim)/launch/challenge-1.launch.py"
+
+- node:
+    pkg: "rviz2"
+    exec: "rviz2"
+    name: "rviz2"
+    args: "$(find-pkg-share grp_pibot26)/launch/rviz_config/simulation_config.rviz"
+
+- node:
+    pkg: "grp_pibot26"
+    exec: "direct_robot"
+    param: 
+    - { name: "defaultSpeed", value: 0.7 }
+    - { name: "defaultRotSpeed", value: 1.0 }
+    - { name: "topicVel", value: "/cmd_vel" }

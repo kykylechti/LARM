@@ -5,6 +5,7 @@ launch:
     param: 
     - { name: "defaultSpeed", value: 0.7 }
     - { name: "defaultRotSpeed", value: 1.0 }
+    - { name: "topicVel", value: "/multi/cmd_nav" }
 - node:
     pkg: "grp_pibot26"
     exec: "vision"
