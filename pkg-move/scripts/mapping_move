@@ -1,0 +1,174 @@
+#!/usr/bin/python3
+import rclpy
+import math
+import random
+from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Twist
+from rclpy.node import Node
+from kobuki_ros_interfaces.msg import BumperEvent
+from kobuki_ros_interfaces.msg import WheelDropEvent
+from kobuki_ros_interfaces.msg import ButtonEvent
+from nav_msgs.msg import OccupancyGrid
+from nav_msgs.msg import MapMetaData
+
+# /map
+# /map_metadata
+
+obstacleDetec = "noScan"    # Détection des obstacles
+memory = "no"               # Détection précédente différente de la détection actuelle
+i = 0                       # Rotations aléatoires à effectuer
+stop = 1                    # Arrêt d'urgence
+speed = 0.0                 # Vitesse linéaire
+rotSpeed = 0.0              # Vitesse de rotation
+defaultSpeed = 0.7          # Vitesse par défaut 
+defaultRotSpeed = 1.0       # Vitesse de rotation par défaut
+memory='no'                 # Etat précédent de détection
+
+
+class StraightCtrl:
+    def initializeRosNode(self, rosNode ):
+        global topicVel
+        # Get logger from the node:
+        self._logger= rosNode.get_logger()
+
+        # Initialize publisher:
+        self._pubVelocity= rosNode.create_publisher(Twist, topicVel, 10)
+
+        # Initialize scan callback:
+        self._subToScan = rosNode.create_subscription(LaserScan, 'scan', self.scan_callback, 10)
+
+        # Initialize control callback:
+        self._timForCtrl= rosNode.create_timer(0.05, self.control_callback)
+
+        # Arrêts d'urgence
+        self._bumper = rosNode.create_subscription(BumperEvent, '/events/bumper', self.bumper_callback, 10)
+        self._wheel = rosNode.create_subscription(WheelDropEvent, '/events/wheel_drop', self.wheel_callback, 10)
+
+        # Redémarrer après un arrêt d'urgence ou démarrer le programme
+        self._button = rosNode.create_subscription(ButtonEvent, '/events/button', self.button_callback, 10)
+
+        # Lire la map
+        self._map = rosNode.create_subscription(OccupancyGrid, '/map', self.map_callback, 10)
+
+    def scan_callback(self, scanMsg ):
+        global obstacleDetec, i, defaultSpeed, speed, rotSpeed, topicVel
+        self._logger.info( topicVel )
+        obstaclesLeft= []
+        obstaclesRight= []
+        distObstacle = []
+        angle= scanMsg.angle_min
+        for aDistance in scanMsg.ranges :
+            if(angle<1.5 and angle>0.0) and (0.05 < aDistance and aDistance < 0.6) : #-57° à 0° environ
+                aPoint= [
+                    math.cos(angle) * aDistance,
+                    math.sin(angle) * aDistance
+                ]
+                obstaclesLeft.append(aPoint)
+            if(angle<0.0 and angle>-1.5) and (0.05 < aDistance and aDistance < 0.6) : #0° à 57° environ
+                aPoint= [
+                    math.cos(angle) * aDistance,
+                    math.sin(angle) * aDistance
+                ]
+                obstaclesRight.append(aPoint)
+            if(angle<1.3 and angle>-1.3) and (0.05 < aDistance and aDistance < 0.7) : #diminution de la vitesse en fonction des obstacles
+                distObstacle.append(aDistance)
+            angle+= scanMsg.angle_increment
+        
+        if(len(distObstacle)!=0):
+            minDist = min(distObstacle)
+        else:
+            minDist = 0.7
+        speed = abs(defaultSpeed - (0.7-minDist)/(0.6/defaultSpeed))
+        rotSpeed = abs((0.6- minDist)/(0.4/defaultRotSpeed))
+        
+        if len(obstaclesLeft) == 0 and len(obstaclesRight) == 0:    # pas d'obstacles détectés dans la zone
+            obstacleDetec = "no"
+        elif len(obstaclesLeft) != 0 and len(obstaclesRight) == 0:  # obstacle détecté à gauche
+            obstacleDetec = "left"
+        elif len(obstaclesLeft) == 0 and len(obstaclesRight) != 0:  # obstacle détecté à droite
+            obstacleDetec = "right"
+        elif len(obstaclesLeft) != 0 and len(obstaclesRight) != 0:  # obstacle détecté des deux cotés
+            obstacleDetec = "both"
+
+            
+    def bumper_callback(self, msg):
+        global stop
+        if msg.state==1:
+            stop=1
+    
+    def wheel_callback(self, msg):
+        global stop
+        if msg.state==1:
+            stop=1
+
+    def button_callback(self, msg):
+        global stop
+        if msg.state==1:
+            stop=0
+
+    def map_callback(self, msg):
+        pass
+    
+    def control_callback(self):
+        global obstacleDetec, i, memory, speed, stop
+        # Dès qu'on change d'état, la mémoire change (si l'obstacle a été détecté à droite en premier il continue de tourner à gauche et inversement)
+        if (memory=='no' and (obstacleDetec=='left' or obstacleDetec=='right')) or ((memory=='left' or memory=='right') and obstacleDetec=='no'): 
+            memory=obstacleDetec
+        # Si jamais il est détecté des deux cotés en même temps
+        elif (obstacleDetec=='both' and memory=='no'): 
+            memory='both'
+
+        velocity = Twist()                                  # initialisation du Twist
+        if stop==0 : 
+            print(stop)
+            if i!=0:
+                velocity.linear.x = speed
+                velocity.angular.z = -rotSpeed
+                i-=1
+            elif memory == 'no':                                # Aller tout droit
+                velocity.linear.x = speed
+                velocity.angular.z = 0.0
+            elif memory == 'left':                              # Tourner à droite
+                velocity.linear.x = speed
+                velocity.angular.z = -rotSpeed
+            elif memory == 'right':                             # Tourner à gauche
+                velocity.linear.x = speed
+                velocity.angular.z = rotSpeed
+            elif memory =='both':                               # Tourner à gauche pendant une durée aléatoire
+                i=random.randint(5, 20)
+                velocity.linear.x = speed
+                velocity.angular.z = -rotSpeed
+                memory='no'
+        else :
+            velocity.linear.x = 0.0
+            velocity.angular.z = 0.0
+
+        self._pubVelocity.publish(velocity)
+    
+def main():
+    global defaultSpeed, defaultRotSpeed, topicVel
+    # Initialisation du noeud
+    rclpy.init()
+    node = Node( "mv_control" )
+
+    node.declare_parameter('defaultSpeed', 0.7)
+    node.declare_parameter('defaultRotSpeed', 1.0)
+    node.declare_parameter('topicVel', "cmd_vel")
+
+    defaultSpeed = node.get_parameter('defaultSpeed').value
+    defaultRotSpeed = node.get_parameter('defaultRotSpeed').value
+    topicVel = node.get_parameter('topicVel').value
+
+    # Appel du contrôle
+    control= StraightCtrl()
+    control.initializeRosNode( node )
+
+    # Infinite Loop:
+    rclpy.spin( node )
+
+    # Fin du programme
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__=='__main__':
+	main()
