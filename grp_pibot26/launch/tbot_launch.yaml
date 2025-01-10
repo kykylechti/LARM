@@ -15,6 +15,4 @@ launch:
     pkg: "rviz2"
     exec: "rviz2"
     name: "rviz2"
-
-- executable:
-    cmd: gnome-terminal --tab 'rviz2 ~/ros_space/uvlarm-wall-e/grp_pibot26/launch/rviz_config/vision_config.rviz'
+    args: "$(find-pkg-share grp_pibot26)/launch/rviz_config/vision_config.rviz"
