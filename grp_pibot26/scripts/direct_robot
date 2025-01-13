@@ -48,7 +48,6 @@ class StraightCtrl:
 
     def scan_callback(self, scanMsg ):
         global obstacleDetec, i, defaultSpeed, speed, rotSpeed, topicVel
-        self._logger.info( topicVel )
         obstaclesLeft= []
         obstaclesRight= []
         distObstacle = []

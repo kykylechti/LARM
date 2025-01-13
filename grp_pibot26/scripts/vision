@@ -9,6 +9,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from kobuki_ros_interfaces.msg import Sound
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 isOk= True
@@ -19,15 +20,21 @@ def signalInteruption(signum, frame):
 
 # Node processes:
 def process_img(args=None):
-    global isOk, color, rayon_detec
+    global isOk, color, rayon_detec, template, template2
     rclpy.init(args=args)
     rsNode= Realsense()
     
     rsNode.declare_parameter('color', 55)
     color = rsNode.get_parameter('color').value
+
+    rsNode.declare_parameter('./template/template', 55)
+    filepath = rsNode.get_parameter('filepath').value
     
-    rsNode.declare_parameter('rayon_detec', 10)
+    rsNode.declare_parameter('rayon_detec', 30)
     rayon_detec = rsNode.get_parameter('rayon_detec').value
+
+    template = cv2.imread(filepath+'.jpg',0)
+    template2 = cv2.imread(filepath+'2.jpg',0)
 
     while isOk:
         # rsNode.read_imgs()
@@ -57,7 +64,7 @@ class Realsense(Node):
         self.pipeline.start(config)
 
     def analyse_imgs(self):
-        global color, rayon_detec
+        global color, rayon_detec, template, template2
         self.frames = self.pipeline.wait_for_frames()
         color_frame = self.frames.first(rs.stream.color)
         color_image = np.asanyarray(color_frame.get_data())
@@ -69,32 +76,46 @@ class Realsense(Node):
         kernel = np.ones((7, 7), np.uint8)
         color_info=(0, 0, 255)
 
-        print("color image")
-        print(color_image)
         image=cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
 
-        print("image")
-        print(image)
         mask=cv2.inRange(image, lo, hi)
         mask=cv2.erode(mask, kernel, iterations=1)
         mask=cv2.dilate(mask, kernel, iterations=1)
         image2=cv2.bitwise_and(color_image, color_image, mask= mask)
-
         elements=cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         if len(elements) > 0:
             c=max(elements, key=cv2.contourArea)
             ((x, y), rayon)=cv2.minEnclosingCircle(c)
             if rayon>rayon_detec:
-                cv2.circle(image2, (int(x), int(y)), int(rayon), color_info, 2)
-                cv2.circle(color_image, (int(x), int(y)), 5, color_info, 10)
-                cv2.line(color_image, (int(x), int(y)), (int(x)+150, int(y)), color_info, 2)
-                cv2.putText(color_image, "Objet !!!", (int(x)+10, int(y) -10), cv2.FONT_HERSHEY_DUPLEX, 1, color_info, 1, cv2.LINE_AA)
+                cv2.circle(color_image, (int(x), int(y)), int(rayon), color_info, 2)
+                cv2.circle(color_image, (int(x), int(y)), 1, color_info, 10)
+                fantome=False
+                if(int(x)-int(rayon)>0 and int(x)+int(rayon)<848 and int(y)-int(rayon)>0 and int(y)+int(rayon)<480):
+                    echantillon = color_image[int(y)-int(rayon):int(y)+int(rayon),int(x)-int(rayon):int(x)+int(rayon),]
+                    image_gray = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
+
+                    down_width = 2*int(rayon)
+                    down_height = 2*int(rayon)
+                    down_points = (down_width, down_height)
+                    template = cv2.resize(template, down_points, interpolation= cv2.INTER_LINEAR)
+                    template2 = cv2.resize(template2, down_points, interpolation= cv2.INTER_LINEAR)
+                    res = cv2.matchTemplate(image_gray, template, cv2.TM_CCOEFF_NORMED)
+                    res2 = cv2.matchTemplate(image_gray, template2, cv2.TM_CCOEFF_NORMED)
+
+                    threshold = 0.45
+                    print(np.max(res))
+                    print(np.max(res2))
+                    fantome = np.any(res>=threshold) or np.any(res2>=threshold)
+
+                    color_image=echantillon
+
                 msg = String()
                 msg.data = "trouve"
                 sound = Sound()
                 sound.value=4
-                self.sound_publisher.publish(sound)
-                self.detec_publisher.publish(msg)
+                if(fantome): 
+                    self.sound_publisher.publish(sound)
+                    self.detec_publisher.publish(msg)
 
         msg_image = self.bridge.cv2_to_imgmsg(color_image,"bgr8")
         msg_image.header.stamp = self.get_clock().now().to_msg()
