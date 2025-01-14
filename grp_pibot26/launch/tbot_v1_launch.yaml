@@ -3,7 +3,7 @@ launch:
     pkg: "grp_pibot26"
     exec: "direct_robot"
     param: 
-    - { name: "defaultSpeed", value: 0.7 }
+    - { name: "defaultSpeed", value: 0.5 }
     - { name: "defaultRotSpeed", value: 1.0 }
     - { name: "topicVel", value: "/multi/cmd_nav" }
 - node:
@@ -11,7 +11,7 @@ launch:
     exec: "vision"
     param: 
     - { name: "color", value: 55 }
-    - { name: "rayon_detec", value: 30 }
+    - { name: "rayon_detec", value: 20 }
     - { name: "filepath", value: "$(find-pkg-share grp_pibot26)/template/template" }
 - node:
     pkg: "rviz2"
