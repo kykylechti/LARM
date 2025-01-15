@@ -100,17 +100,22 @@ class Realsense(Node):
         if len(elements) > 0:
             c=max(elements, key=cv2.contourArea)
             ((x, y), rayon)=cv2.minEnclosingCircle(c)
-            if rayon>rayon_detec:               #Condition de taille sur la détection d'éléments
+            if rayon>rayon_detec:   #Condition de taille sur la détection d'éléments
                 fantome=False
-                if(int(x)-int(rayon)>0 and int(x)+int(rayon)<848 and int(y)-int(rayon)>0 and int(y)+int(rayon)<480): 
-                    echantillon = color_image[int(y)-int(rayon):int(y)+int(rayon),int(x)-int(rayon):int(x)+int(rayon),]
+                if(int(x)-int(rayon)>0 and int(x)+int(rayon)<848 and int(y)-int(rayon)>0 and int(y)+int(rayon)<480):  
+
+                    #Récupération d'un échantillon carré de l'image où se situe l'objet détecté
+                    echantillon = color_image[int(y)-int(rayon):int(y)+int(rayon),int(x)-int(rayon):int(x)+int(rayon),]   
                     image_gray = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
 
+                    #Chargement du template et ajustement à la taille de l'échantillon trouvé
                     down_width = 2*int(rayon)
                     down_height = 2*int(rayon)
                     down_points = (down_width, down_height)
                     template = cv2.resize(template, down_points, interpolation= cv2.INTER_LINEAR)
                     template2 = cv2.resize(template2, down_points, interpolation= cv2.INTER_LINEAR)
+
+                    #Calcul du matching avec chacun des 2 templates
                     res = cv2.matchTemplate(image_gray, template, cv2.TM_CCOEFF_NORMED)
                     res2 = cv2.matchTemplate(image_gray, template2, cv2.TM_CCOEFF_NORMED)
 
@@ -126,6 +131,7 @@ class Realsense(Node):
                 #sound = Sound()
                 #sound.value=0
                 if(fantome): 
+                    #Recherche de la position du fantome détecté par rapport au robot
                     aligned_frames =  self.align.process(self.frames)
                     #self.sound_publisher.publish(sound)
                     self.detec_publisher.publish(msg)
@@ -141,13 +147,14 @@ class Realsense(Node):
                     goal.y=dy
                     goal.z=dz
                     self.pose_publisher.publish(goal)
-                    print("distance : " + str(distance))
 
+        #Publication des images en couleur dans un topic dédié
         msg_image = self.bridge.cv2_to_imgmsg(color_image,"bgr8")
         msg_image.header.stamp = self.get_clock().now().to_msg()
         msg_image.header.frame_id = "image"
         self.image_publisher.publish(msg_image)
 
+        #Publication des images de distance dans un topic dédié
         depth_frame = self.frames.first(rs.stream.depth)
         depth_image = np.asanyarray(depth_frame.get_data())
         
