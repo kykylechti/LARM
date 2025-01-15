@@ -17,6 +17,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ImageCoord.msg"
+  "msg/DepthCoord.msg"
   DEPENDENCIES geometry_msgs sensor_msgs
 )
 ament_export_dependencies(rosidl_default_runtime)
