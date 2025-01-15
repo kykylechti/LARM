@@ -146,7 +146,7 @@ class Realsense(Node):
                     goal.x=dx
                     goal.y=dy
                     goal.z=dz
-                    self.pose_publisher.publish(goal)
+                    self.goal_publisher.publish(goal)
 
         #Publication des images en couleur dans un topic dédié
         msg_image = self.bridge.cv2_to_imgmsg(color_image,"bgr8")
