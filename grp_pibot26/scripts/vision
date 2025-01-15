@@ -11,6 +11,7 @@ from kobuki_ros_interfaces.msg import Sound
 from geometry_msgs.msg import Vector3
 import numpy as np
 from matplotlib import pyplot as plt
+from interfaces_robot import ImageCoord
 
 
 isOk= True
@@ -21,7 +22,7 @@ def signalInteruption(signum, frame):
 
 # Node processes:
 def process_img(args=None):
-    global isOk, color, rayon_detec, template, template2
+    global isOk, color, rayon_detec
     rclpy.init(args=args)
     rsNode= Realsense()
     
@@ -29,14 +30,8 @@ def process_img(args=None):
     rsNode.declare_parameter('color', 75)
     color = rsNode.get_parameter('color').value
 
-    rsNode.declare_parameter('filepath', "./template/template")
-    filepath = rsNode.get_parameter('filepath').value
-    
     rsNode.declare_parameter('rayon_detec', 40)
     rayon_detec = rsNode.get_parameter('rayon_detec').value
-
-    template = cv2.imread(filepath+'.jpg',0)
-    template2 = cv2.imread(filepath+'2.jpg',0)
 
     while isOk:
         # rsNode.read_imgs()
@@ -58,8 +53,10 @@ class Realsense(Node):
         self.image_publisher = self.create_publisher(Image, '/sensor_image', 10)        #Publisher image en couleur
         self.detec_publisher = self.create_publisher(String, '/detection_objet', 10)    #Publisher de détection de fantome
         self.depth_publisher = self.create_publisher(Image, '/sensor_depth', 10)        #Publisher image de distance
+        self.imagecoord_publisher = self.create_publisher(ImageCoord, '/ImageDepthCoord', 10)
         #self.sound_publisher = self.create_publisher(Sound, '/commands/sound', 10)      #Publisher de son
         self.goal_publisher = self.create_publisher(Vector3, '/position', 10)           #Publisher position du fantome
+        self.matching_listener = self.create_subscription(Bool, '/fantome', fantome_callback, 10)
 
         #ouverture du flux via la caméra
         self.pipeline = rs.pipeline()
@@ -72,8 +69,29 @@ class Realsense(Node):
 
         self.pipeline.start(config)
 
+    def fantome(self, msg): 
+        if (msg.data):
+            msg = String()
+            msg.data = "trouve"
+            #Recherche de la position du fantome détecté par rapport au robot
+            aligned_frames =  self.align.process(self.frames)
+            #self.sound_publisher.publish(sound)
+            self.detec_publisher.publish(msg)
+            depth_frame = aligned_frames.get_depth_frame()
+            aligned_color_frame = aligned_frames.get_color_frame()
+            color_intrin = aligned_color_frame.profile.as_video_stream_profile().intrinsics
+            depth = depth_frame.get_distance(int(x), int(y))
+                    
+            dx ,dy, dz = rs.rs2_deproject_pixel_to_point(color_intrin, [int(x),int(y)], depth)
+            distance = math.sqrt(((dx)**2) + ((dy)**2) + ((dz)**2))
+            goal = Vector3()
+            goal.x=dx
+            goal.y=dy
+            goal.z=dz
+            self.goal_publisher.publish(goal)
+
     def analyse_imgs(self):
-        global color, rayon_detec, template, template2
+        global color, rayon_detec
         self.frames = self.pipeline.wait_for_frames()
         color_frame = self.frames.first(rs.stream.color)
         color_image = np.asanyarray(color_frame.get_data())
@@ -95,6 +113,15 @@ class Realsense(Node):
         mask=cv2.dilate(mask, kernel, iterations=1)
         image2=cv2.bitwise_and(color_image, color_image, mask= mask)
 
+        depth_frame = self.frames.first(rs.stream.depth)
+        depth_image = np.asanyarray(depth_frame.get_data())
+        
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+
+        msg_depth = self.bridge.cv2_to_imgmsg(depth_colormap,"bgr8")
+        msg_depth.header.stamp = msg_image.header.stamp
+        msg_depth.header.frame_id = "depth"
+
         #Recherche de contours dans l'image à laquelle le masque a été appliqué
         elements=cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         if len(elements) > 0:
@@ -105,48 +132,22 @@ class Realsense(Node):
                 if(int(x)-int(rayon)>0 and int(x)+int(rayon)<848 and int(y)-int(rayon)>0 and int(y)+int(rayon)<480):  
 
                     #Récupération d'un échantillon carré de l'image où se situe l'objet détecté
-                    echantillon = color_image[int(y)-int(rayon):int(y)+int(rayon),int(x)-int(rayon):int(x)+int(rayon),]   
-                    image_gray = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
+                    echantillon = color_image[int(y)-int(rayon):int(y)+int(rayon),int(x)-int(rayon):int(x)+int(rayon),]
 
-                    #Chargement du template et ajustement à la taille de l'échantillon trouvé
-                    down_width = 2*int(rayon)
-                    down_height = 2*int(rayon)
-                    down_points = (down_width, down_height)
-                    template = cv2.resize(template, down_points, interpolation= cv2.INTER_LINEAR)
-                    template2 = cv2.resize(template2, down_points, interpolation= cv2.INTER_LINEAR)
+                    msgMatching = ImageCoord()
+                    msgMatching.image = self.bridge.cv2_to_imgmsg(echantillon,"bgr8")
+                    msgMatching.depth = msg_depth
+                    msgMatching.rayon = rayon
+                    msgMatching.vect.x = x
+                    msgMatching.vect.y = y
+                    msgMatching.vect.z = 0
 
-                    #Calcul du matching avec chacun des 2 templates
-                    res = cv2.matchTemplate(image_gray, template, cv2.TM_CCOEFF_NORMED)
-                    res2 = cv2.matchTemplate(image_gray, template2, cv2.TM_CCOEFF_NORMED)
-
-                    threshold = 0.5
-                    print(np.max(res))
-                    print(np.max(res2))
-                    fantome = np.any(res>=threshold) or np.any(res2>=threshold)
+                    self.imagecoord_publisher.publish(msgMatching)
 
                     color_image=echantillon
 
-                msg = String()
-                msg.data = "trouve"
                 #sound = Sound()
                 #sound.value=0
-                if(fantome): 
-                    #Recherche de la position du fantome détecté par rapport au robot
-                    aligned_frames =  self.align.process(self.frames)
-                    #self.sound_publisher.publish(sound)
-                    self.detec_publisher.publish(msg)
-                    depth_frame = aligned_frames.get_depth_frame()
-                    aligned_color_frame = aligned_frames.get_color_frame()
-                    color_intrin = aligned_color_frame.profile.as_video_stream_profile().intrinsics
-                    depth = depth_frame.get_distance(int(x), int(y))
-                    
-                    dx ,dy, dz = rs.rs2_deproject_pixel_to_point(color_intrin, [int(x),int(y)], depth)
-                    distance = math.sqrt(((dx)**2) + ((dy)**2) + ((dz)**2))
-                    goal = Vector3()
-                    goal.x=dx
-                    goal.y=dy
-                    goal.z=dz
-                    self.goal_publisher.publish(goal)
 
         #Publication des images en couleur dans un topic dédié
         msg_image = self.bridge.cv2_to_imgmsg(color_image,"bgr8")
@@ -155,14 +156,7 @@ class Realsense(Node):
         self.image_publisher.publish(msg_image)
 
         #Publication des images de distance dans un topic dédié
-        depth_frame = self.frames.first(rs.stream.depth)
-        depth_image = np.asanyarray(depth_frame.get_data())
         
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-
-        msg_depth = self.bridge.cv2_to_imgmsg(depth_colormap,"bgr8")
-        msg_depth.header.stamp = msg_image.header.stamp
-        msg_depth.header.frame_id = "depth"
         self.depth_publisher.publish(msg_depth)
 
 process_img()

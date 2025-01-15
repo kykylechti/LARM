@@ -17,6 +17,12 @@ launch:
     param: 
     - { name: "color", value: 75 }
     - { name: "rayon_detec", value: 40 }
+    
+
+- node:
+    pkg: "grp_pibot26"
+    exec: "template_matching"
+    param: 
     - { name: "filepath", value: "$(find-pkg-share grp_pibot26)/template/template" }
 
 - node:
