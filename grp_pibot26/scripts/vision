@@ -25,6 +25,7 @@ def process_img(args=None):
     rclpy.init(args=args)
     rsNode= Realsense()
     
+    #Déclaration des paramètres rentrés via le launch file
     rsNode.declare_parameter('color', 75)
     color = rsNode.get_parameter('color').value
 
@@ -54,11 +55,13 @@ def process_img(args=None):
 class Realsense(Node):
     def __init__(self, fps= 60):
         super().__init__('object_detection')
-        self.image_publisher = self.create_publisher(Image, '/sensor_image', 10)
-        self.detec_publisher = self.create_publisher(String, '/detection_objet', 10)
-        self.depth_publisher = self.create_publisher(Image, '/sensor_depth', 10)
-        #self.sound_publisher = self.create_publisher(Sound, '/commands/sound', 10)
-        self.pose_publisher = self.create_publisher(Vector3, '/position', 10)
+        self.image_publisher = self.create_publisher(Image, '/sensor_image', 10)        #Publisher image en couleur
+        self.detec_publisher = self.create_publisher(String, '/detection_objet', 10)    #Publisher de détection de fantome
+        self.depth_publisher = self.create_publisher(Image, '/sensor_depth', 10)        #Publisher image de distance
+        #self.sound_publisher = self.create_publisher(Sound, '/commands/sound', 10)      #Publisher de son
+        self.goal_publisher = self.create_publisher(Vector3, '/position', 10)           #Publisher position du fantome
+
+        #ouverture du flux via la caméra
         self.pipeline = rs.pipeline()
         config = rs.config()
         config.enable_stream(rs.stream.color, 848, 480, rs.format.bgr8, 60)
@@ -78,6 +81,7 @@ class Realsense(Node):
 
         self.bridge=CvBridge()
 
+        #Paramètres de traitement d'image
         lo=np.array([color-20, 100, 50])
         hi=np.array([color+20, 255,255])
         kernel = np.ones((7, 7), np.uint8)
@@ -85,17 +89,20 @@ class Realsense(Node):
 
         image=cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
 
+        #Création du masque à appliquer à l'image
         mask=cv2.inRange(image, lo, hi)
         mask=cv2.erode(mask, kernel, iterations=1)
         mask=cv2.dilate(mask, kernel, iterations=1)
         image2=cv2.bitwise_and(color_image, color_image, mask= mask)
+
+        #Recherche de contours dans l'image à laquelle le masque a été appliqué
         elements=cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         if len(elements) > 0:
             c=max(elements, key=cv2.contourArea)
             ((x, y), rayon)=cv2.minEnclosingCircle(c)
-            if rayon>rayon_detec:
+            if rayon>rayon_detec:               #Condition de taille sur la détection d'éléments
                 fantome=False
-                if(int(x)-int(rayon)>0 and int(x)+int(rayon)<848 and int(y)-int(rayon)>0 and int(y)+int(rayon)<480):
+                if(int(x)-int(rayon)>0 and int(x)+int(rayon)<848 and int(y)-int(rayon)>0 and int(y)+int(rayon)<480): 
                     echantillon = color_image[int(y)-int(rayon):int(y)+int(rayon),int(x)-int(rayon):int(x)+int(rayon),]
                     image_gray = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
 
