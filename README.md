@@ -49,8 +49,7 @@ Il se déplace intelligemment dans l'espace afin d'explorer l'ensemble de la zon
 
 uvlarm-wall-e/grp_pibot26/scripts/vision
 
-La caméra permet au robot de détecter la présence d'objets verts.
-Si la forme détectée est suffisament imposante, il considère que l'objet est trouvé et envoie un message String dans un topic dédié.
+Cette node repert la présence d'objets verts dans le champ de la caméra. Chaque objet détecté est comparé à un template du fantome. Si la corrélation est suffisante, un son est produit par le robot, un message est envoyé dans un topic dédié et la distance au robot est calculé.
 
 ### Fonctionalités supplémentaires 
 Le robot possède plusieurs fonctions d'arrêt avec les différents éléments qu'il possède : le bumper avant ainsi que les roules qui se relâchent.
