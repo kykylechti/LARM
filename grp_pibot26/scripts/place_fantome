@@ -1,0 +1,41 @@
+#!/usr/bin/python3
+import rclpy
+import math, random, tf2_ros, numpy as np
+from rclpy.node import Node
+import tf2_geometry_msgs 
+
+
+class Finder(Node):
+    def __init__(self, fps= 60):
+        # Transform tool:
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+        self.pose_listener = self.create_subscription(Vector3, '/position', self.pose_callback, 10)
+
+        # Node Attribute:
+        self.reference_frame='odom'
+        self.local_frame= 'base_link'
+        self.global_goal= Pose()
+        self.global_goal.position.x= (float)(self.pose_listener.x)
+        self.global_goal.position.y= (float)(self.pose_listener.z)
+
+        node.create_timer(0.1, self.publish_goal)
+
+    def pose_callback(self): 
+        pass
+
+
+    def publish_goal(self):
+        self._node= Finder()
+
+        currentTime= rclpy.time.Time()
+
+        # Get Transformation
+        try:
+            stampedTransform= self.tf_buffer.lookup_transform(self.local_frame, self.reference_frame, currentTime)
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):TransformException as tex:
+            self._node.get_logger().info( f'Could not transform the goal into {self.local_frame}: {tex}')
+            return
+
+        # Local goal à positionner dans la map
+        localGoal = tf2_geometry_msgs.do_transform_pose( self.global_goal, stampedTransform )
