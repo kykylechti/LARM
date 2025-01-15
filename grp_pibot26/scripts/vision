@@ -24,13 +24,13 @@ def process_img(args=None):
     rclpy.init(args=args)
     rsNode= Realsense()
     
-    rsNode.declare_parameter('color', 55)
+    rsNode.declare_parameter('color', 75)
     color = rsNode.get_parameter('color').value
 
     rsNode.declare_parameter('filepath', "./template/template")
     filepath = rsNode.get_parameter('filepath').value
     
-    rsNode.declare_parameter('rayon_detec', 20)
+    rsNode.declare_parameter('rayon_detec', 40)
     rayon_detec = rsNode.get_parameter('rayon_detec').value
 
     template = cv2.imread(filepath+'.jpg',0)
@@ -71,8 +71,8 @@ class Realsense(Node):
 
         self.bridge=CvBridge()
 
-        lo=np.array([color-10, 100, 50])
-        hi=np.array([color+10, 255,255])
+        lo=np.array([color-20, 100, 50])
+        hi=np.array([color+20, 255,255])
         kernel = np.ones((7, 7), np.uint8)
         color_info=(0, 0, 255)
 
@@ -87,8 +87,6 @@ class Realsense(Node):
             c=max(elements, key=cv2.contourArea)
             ((x, y), rayon)=cv2.minEnclosingCircle(c)
             if rayon>rayon_detec:
-                cv2.circle(color_image, (int(x), int(y)), int(rayon), color_info, 2)
-                cv2.circle(color_image, (int(x), int(y)), 1, color_info, 10)
                 fantome=False
                 if(int(x)-int(rayon)>0 and int(x)+int(rayon)<848 and int(y)-int(rayon)>0 and int(y)+int(rayon)<480):
                     echantillon = color_image[int(y)-int(rayon):int(y)+int(rayon),int(x)-int(rayon):int(x)+int(rayon),]

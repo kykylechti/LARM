@@ -27,6 +27,6 @@ ament_package()
 
 install( PROGRAMS scripts/direct_robot DESTINATION lib/${PROJECT_NAME} )
 install( PROGRAMS scripts/vision DESTINATION lib/${PROJECT_NAME} )
-install( DIRECTORY launch DESTINATION share/${PROJECT_NAME}/ )
+install( DIRECTORY launch params DESTINATION share/${PROJECT_NAME}/ )
 install( DIRECTORY scripts/template DESTINATION share/${PROJECT_NAME}/ )
 install( DIRECTORY rviz_config DESTINATION share/${PROJECT_NAME}/ )
