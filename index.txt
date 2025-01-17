@@ -1,4 +1,5 @@
 Amélioration infrastructure 
 Placer plusieurs fantomes sur la carte et éviter les répétitions
+Mouvement intelligent
 Capture vidéo mapping
-Capture vidéo robot en mouvement
+Capture vidéo robot en mouvement dans map
