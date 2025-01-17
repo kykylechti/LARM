@@ -1,0 +1,4 @@
+Amélioration infrastructure 
+Placer plusieurs fantomes sur la carte et éviter les répétitions
+Capture vidéo mapping
+Capture vidéo robot en mouvement
