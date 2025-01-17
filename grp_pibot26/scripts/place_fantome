@@ -2,9 +2,12 @@
 import rclpy
 import math, random, tf2_ros, numpy as np
 from rclpy.node import Node
-from geometry_msgs.msg import Vector3
+from geometry_msgs.msg import Vector3, PoseWithCovariance, PoseStamped, Pose
 import tf2_geometry_msgs 
 from tf2_ros.buffer import Buffer
+from visualization_msgs.msg import MarkerArray, InteractiveMarker, InteractiveMarkerUpdate
+from std_msgs.msg import ColorRGBA
+
 
 x_mobil = 0.0
 y_mobil = 0.0
@@ -15,7 +18,10 @@ def signalInteruption(signum, frame):
     isOk= False
 
 class Finder(Node):
-    def __init__(self, rosNode ):
+    def __init__(self):
+        self._i = 0
+
+    def initializeFinderNode(self, rosNode ):
         # Get logger from the node:
         self._logger= rosNode.get_logger()
         
@@ -25,38 +31,67 @@ class Finder(Node):
 
         # Publisher / Listener
         self.goal_listener = rosNode.create_subscription(Vector3, '/position', self.goal_callback, 10)
-        self.pose_publisher= rosNode.create_publisher(tf2_geometry_msgs.Pose, '/pose', 10)
+        self.pose_publisher= rosNode.create_publisher(InteractiveMarker, '/slam_toolbox/update', 10)
 
 
         # Node Attribute:
         self.reference_frame='odom'
         self.local_frame= 'base_link'
-        self.global_goal= tf2_geometry_msgs.Pose()
-        self.global_goal.position.x= (float)(1)
-        self.global_goal.position.y= (float)(1)
+        self.global_goal= Pose()
+        self.global_goal.position.x= (float)(0)
+        self.global_goal.position.y= (float)(0)
+
 
         rosNode.create_timer(0.1, self.publish_goal)
         
     def goal_callback(self, msg): 
-        self.global_goal=msg
+        self.global_goal.position.x=msg.x
+        self.global_goal.position.y=msg.y
+        self.global_goal.position.z=msg.z
+
 
     def publish_goal(self):
-        localGoal = tf2_geometry_msgs.Pose()
+        tmpPose = Pose()
         currentTime= rclpy.time.Time()
         # Get Transformation
-        try:
-            stampedTransform= self.tfbuffer.lookup_transform(
-                        'odom',
-                        self.local_frame,
-                        currentTime)
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException): 
-            self._logger.info( f'Could not transform the goal into {self.local_frame}: Exception')
-            return
+        if(self.global_goal.position.x!=0 and self.global_goal.position.y!=0 ):
+            try:
+                stampedTransform= self.tfbuffer.lookup_transform(self.reference_frame, self.local_frame, currentTime)
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException): 
+                self._logger.info( f'Could not transform the goal into {self.local_frame}: Exception')
+                return
+        for idx, (x, y, z) in enumerate(marker_positions):
+            tmpPose = tf2_geometry_msgs.do_transform_pose(self.global_goal, stampedTransform)
 
+            localGoal = Marker()
+            localGoal.header.frame_id = "map"  # Frame of reference (use 'map' or other valid frame)
+            localGoal.header.stamp = myROSNode.get_clock().now().to_msg()
+            localGoal.ns = "array_of_markers"
+            localGoal.id = idx  # Unique ID for each marker in the array
+            localGoal.type = Marker.SPHERE
+            localGoal.action = Marker.ADD
 
-        
+            # Set the position of each marker
+            localGoal.pose.position.x = tmpPose.x
+            localGoal.pose.position.y = tmpPose.y
+            localGoal.pose.position.z = tmpPose.z
+            localGoal.pose.orientation.w = 1.0
 
-        
+            # Set the scale of the marker (size)
+            localGoal.scale.x = 0.5
+            localGoal.scale.y = 0.5
+            localGoal.scale.z = 0.5
+
+            # Set the color of the marker (green)
+            localGoal.color = ColorRGBA(r=0.0, g=1.0, b=0.0, a=1.0)
+
+            # Publish the marker
+            self.pose_publisher.publish(localGoal)
+
+            # Log to confirm marker publishing
+            myROSNode.get_logger().info(f"Publishing marker {idx} at position: ({x}, {y}, {z})")
+
+            
 
 def main():
 
@@ -65,11 +100,11 @@ def main():
     node = Node( "mv_control" )
 
     # Appel du contrôle
-    local= Finder(node)
+    FinderNode = Finder()
+    FinderNode.initializeFinderNode(node)
 
-    while isOk:
-        local.publish_goal()
-        rclpy.spin_once(local, timeout_sec=0.1)
+    # Infinite Loop:
+    rclpy.spin( node )
 
     # Fin du programme
     node.destroy_node()
