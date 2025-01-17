@@ -52,8 +52,8 @@ class Realsense(Node):
         self.image_publisher = self.create_publisher(Image, '/sensor_image', 10)        #Publisher image en couleur
         self.detec_publisher = self.create_publisher(String, '/detection_objet', 10)    #Publisher de détection de fantome
         self.depth_publisher = self.create_publisher(Image, '/sensor_depth', 10)        #Publisher image de distance
-        self.imagecoord_publisher = self.create_publisher(ImageCoord, '/ImageDepthCoord', 10)
-        #self.sound_publisher = self.create_publisher(Sound, '/commands/sound', 10)      #Publisher de son
+        self.imagecoord_publisher = self.create_publisher(ImageCoord, '/ImageDepthCoord', 10)   #publisher image pour analyse template matching
+        self.sound_publisher = self.create_publisher(Sound, '/commands/sound', 10)      #Publisher de son
         self.goal_publisher = self.create_publisher(Vector3, '/position', 10)           #Publisher position du fantome
         self.matching_listener = self.create_subscription(StringVect, '/fantome', self.fantome_callback, 10)
 
@@ -72,7 +72,10 @@ class Realsense(Node):
         if (msg.message.data == "fantome"):
             #Recherche de la position du fantome détecté par rapport au robot
             aligned_frames =  self.align.process(self.frames)
-            #self.sound_publisher.publish(sound)
+
+            sound = Sound()
+            sound.value=0
+            self.sound_publisher.publish(sound)
             depth_frame = aligned_frames.get_depth_frame()
             aligned_color_frame = aligned_frames.get_color_frame()
             color_intrin = aligned_color_frame.profile.as_video_stream_profile().intrinsics
@@ -148,8 +151,6 @@ class Realsense(Node):
 
                     color_image=echantillon
 
-                #sound = Sound()
-                #sound.value=0
         
         self.image_publisher.publish(msg_image)
         self.depth_publisher.publish(msg_depth)

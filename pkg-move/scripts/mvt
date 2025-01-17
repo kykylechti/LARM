@@ -23,7 +23,7 @@ bumper_type = 0
 bumper_state = 0
 valeur_x = 0.0
 valeur_z = 0.0
-i=0
+i=1
 
 def squaredMov():
     rclpy.init()
@@ -41,7 +41,7 @@ def squaredMov():
 class ROSTalker:
     def __init__(self, rosNode):
         self._publisher = rosNode.create_publisher(Twist, '/multi/cmd_nav', 10)
-        self._timer = rosNode.create_timer(0.5, self.timer_callback)
+        self._timer = rosNode.create_timer(0.1, self.timer_callback)
 
     def timer_callback(self):
         global bumper_type 
@@ -50,22 +50,14 @@ class ROSTalker:
         velocity = Twist()
         print("avance : " + str(bumper_type) + ";" + str(bumper_state))
 
-        if(i>2):
-            valeur_x=0.2
+        if(i!=0):
+            valeur_x=0.5
             valeur_z=0.0
-        else:
-            if(bumper_state==1 and bumper_type==1): 
-                valeur_x=0.0
-                valeur_z=-1.0
-            else: 
-                valeur_x=0.0
-                valeur_z=1.0
-        
-        i+=1
-        velocity.linear.x = valeur_x
-        velocity.angular.z = valeur_z
+            velocity.linear.x = valeur_x
+            velocity.angular.z = valeur_z
 
-        self._publisher.publish(velocity)
+            self._publisher.publish(velocity)
+        
 
 class ROSListener: 
     def __init__(self, rosNode): 
@@ -88,5 +80,5 @@ class ROSListener:
             print(" : " + str(bumper_type) + ";" + str(bumper_state))
 
 if __name__ == "__main__":
-#    squaredMov()
+    squaredMov()
     print("tkt")

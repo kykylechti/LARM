@@ -11,6 +11,7 @@ class TemplateNode(Node):
         self._i = 0
         
     def initializeTemplateNode(self, rosNode ):
+        self._logger = rosNode.get_logger()
         # Publisher / Listener
         self.image_listener = rosNode.create_subscription(ImageCoord, '/ImageDepthCoord', self.match_callback, 10)
         self.depth_publisher= rosNode.create_publisher(DepthCoord, '/DepthCoord', 10)
@@ -34,14 +35,15 @@ class TemplateNode(Node):
         res = cv2.matchTemplate(image_gray, template, cv2.TM_CCOEFF_NORMED)
         res2 = cv2.matchTemplate(image_gray, template2, cv2.TM_CCOEFF_NORMED)
 
-        threshold = 0.5
-        fantomeMsg = StringVect()
-        fantomeMsg.message.data = "fantome"
-        fantomeMsg.vect.x = msg.vect.x
-        fantomeMsg.vect.y = msg.vect.y
-        fantomeMsg.vect.z = msg.vect.z
+        threshold = 0.22
+        if(np.max(res)>threshold or np.max(res2)>threshold):
+            fantomeMsg = StringVect()
+            fantomeMsg.message.data = "fantome"
+            fantomeMsg.vect.x = msg.vect.x
+            fantomeMsg.vect.y = msg.vect.y
+            fantomeMsg.vect.z = msg.vect.z
 
-        self.stringvect_publisher.publish(fantomeMsg)
+            self.stringvect_publisher.publish(fantomeMsg)
 
 def main():
     global template, template2
