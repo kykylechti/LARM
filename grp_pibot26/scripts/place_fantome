@@ -5,7 +5,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Vector3, PoseWithCovariance, PoseStamped, Pose
 import tf2_geometry_msgs 
 from tf2_ros.buffer import Buffer
-from visualization_msgs.msg import MarkerArray, InteractiveMarker, InteractiveMarkerUpdate
+from visualization_msgs.msg import MarkerArray, InteractiveMarker, InteractiveMarkerUpdate, Marker
 from std_msgs.msg import ColorRGBA
 
 
@@ -31,18 +31,19 @@ class Finder(Node):
 
         # Publisher / Listener
         self.goal_listener = rosNode.create_subscription(Vector3, '/position', self.goal_callback, 10)
-        self.pose_publisher= rosNode.create_publisher(InteractiveMarker, '/slam_toolbox/update', 10)
+        self.pose_publisher= rosNode.create_publisher(Marker, '/visualization_marker_array', 10)
 
 
         # Node Attribute:
         self.reference_frame='odom'
         self.local_frame= 'base_link'
         self.global_goal= Pose()
-        self.global_goal.position.x= (float)(0)
-        self.global_goal.position.y= (float)(0)
+        self.global_goal.position.x= (float)(0.0)
+        self.global_goal.position.y= (float)(0.0)
 
 
-        rosNode.create_timer(0.1, self.publish_goal)
+        self._timer = rosNode.create_timer(0.1, self.publish_goal)
+        self._clock = rosNode.get_clock()
         
     def goal_callback(self, msg): 
         self.global_goal.position.x=msg.x
@@ -56,40 +57,47 @@ class Finder(Node):
         # Get Transformation
         if(self.global_goal.position.x!=0 and self.global_goal.position.y!=0 ):
             try:
-                stampedTransform= self.tfbuffer.lookup_transform(self.reference_frame, self.local_frame, currentTime)
+                stampedTransform= self.tfbuffer.lookup_transform(self.local_frame, self.reference_frame, currentTime)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException): 
                 self._logger.info( f'Could not transform the goal into {self.local_frame}: Exception')
                 return
-        for idx, (x, y, z) in enumerate(marker_positions):
-            tmpPose = tf2_geometry_msgs.do_transform_pose(self.global_goal, stampedTransform)
 
-            localGoal = Marker()
-            localGoal.header.frame_id = "map"  # Frame of reference (use 'map' or other valid frame)
-            localGoal.header.stamp = myROSNode.get_clock().now().to_msg()
-            localGoal.ns = "array_of_markers"
-            localGoal.id = idx  # Unique ID for each marker in the array
-            localGoal.type = Marker.SPHERE
-            localGoal.action = Marker.ADD
+            marker_positions = [
+            (self.global_goal.position.x, self.global_goal.position.y, self.global_goal.position.z),
+            ]
 
-            # Set the position of each marker
-            localGoal.pose.position.x = tmpPose.x
-            localGoal.pose.position.y = tmpPose.y
-            localGoal.pose.position.z = tmpPose.z
-            localGoal.pose.orientation.w = 1.0
+            for idx, (x, y, z) in enumerate(marker_positions):
+                tmpPose = tf2_geometry_msgs.do_transform_pose(self.global_goal, stampedTransform)
 
-            # Set the scale of the marker (size)
-            localGoal.scale.x = 0.5
-            localGoal.scale.y = 0.5
-            localGoal.scale.z = 0.5
+                localGoal = Marker()
+                localGoal.header.frame_id = "map"  # Frame of reference (use 'map' or other valid frame)
+                localGoal.header.stamp = self._clock.now().to_msg()
+                localGoal.ns = "array_of_markers"
+                localGoal.id = idx  # Unique ID for each marker in the array
+                localGoal.type = Marker.SPHERE
+                localGoal.action = Marker.ADD
 
-            # Set the color of the marker (green)
-            localGoal.color = ColorRGBA(r=0.0, g=1.0, b=0.0, a=1.0)
+                # Set the position of each marker
+                localGoal.pose.position.x = tmpPose.position.x
+                localGoal.pose.position.y = tmpPose.position.y
+                localGoal.pose.orientation.w = 1.0
 
-            # Publish the marker
-            self.pose_publisher.publish(localGoal)
+                # Set the scale of the marker (size)
+                localGoal.scale.x = 0.5
+                localGoal.scale.y = 0.5
+                localGoal.scale.z = 0.5
 
-            # Log to confirm marker publishing
-            myROSNode.get_logger().info(f"Publishing marker {idx} at position: ({x}, {y}, {z})")
+                # Set the color of the marker (green)
+                localGoal.color = ColorRGBA(r=0.0, g=1.0, b=0.0, a=1.0)
+
+                # Publish the marker
+                self.pose_publisher.publish(localGoal)
+
+                # Log to confirm marker publishing
+                self._logger.info(f"Publishing marker {idx} at position: ({x}, {y}, {z})")
+                self.global_goal.position.x= (float)(0.0)
+                self.global_goal.position.y= (float)(0.0)
+
 
             
 
@@ -100,8 +108,8 @@ def main():
     node = Node( "mv_control" )
 
     # Appel du contrôle
-    FinderNode = Finder()
-    FinderNode.initializeFinderNode(node)
+    finderNode = Finder()
+    finderNode.initializeFinderNode(node)
 
     # Infinite Loop:
     rclpy.spin( node )
