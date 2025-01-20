@@ -4,16 +4,13 @@ import math
 import random
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Bool
 from rclpy.node import Node
-from kobuki_ros_interfaces.msg import BumperEvent
-from kobuki_ros_interfaces.msg import WheelDropEvent
-from kobuki_ros_interfaces.msg import ButtonEvent
-
 
 obstacleDetec = "noScan"    # Détection des obstacles
 memory = "no"               # Détection précédente différente de la détection actuelle
 i = 0                       # Rotations aléatoires à effectuer
-stop = 0                    # Arrêt d'urgence
+stop = False                    # Arrêt d'urgence
 speed = 0.0                 # Vitesse linéaire
 rotSpeed = 0.0              # Vitesse de rotation
 defaultSpeed = 0.7          # Vitesse par défaut 
@@ -40,10 +37,7 @@ class StraightCtrl:
             0.05, self.control_callback
         )
         # Arrêts d'urgence
-        self._bumper = rosNode.create_subscription(BumperEvent, '/events/bumper', self.bumper_callback, 10)
-        self._wheel = rosNode.create_subscription(WheelDropEvent, '/events/wheel_drop', self.wheel_callback, 10)
-        # Redémarrer après un arrêt d'urgence
-        self._button = rosNode.create_subscription(ButtonEvent, '/events/button', self.button_callback, 10)
+        self._emergency = rosNode.create_subscription(Bool, '/emergency', self.emergency_callback, 10)
 
 
     def scan_callback(self, scanMsg ):
@@ -86,21 +80,10 @@ class StraightCtrl:
             obstacleDetec = "both"
 
             
-    def bumper_callback(self, msg):
+    def emergency_callback(self, msg):
         global stop
-        if msg.state==1:
-            stop=1
-    
-    def wheel_callback(self, msg):
-        global stop
-        if msg.state==1:
-            stop=1
+        stop = msg.data
 
-    def button_callback(self, msg):
-        global stop
-        if msg.state==1:
-            stop=0
-    
     def control_callback(self):
         global obstacleDetec, i, memory, speed, stop
         # Dès qu'on change d'état, la mémoire change (si l'obstacle a été détecté à droite en premier il continue de tourner à gauche et inversement)
@@ -111,8 +94,7 @@ class StraightCtrl:
             memory='both'
 
         velocity = Twist()                                  # initialisation du Twist
-        if stop==0 : 
-            print(stop)
+        if (stop!=True) : 
             if i!=0:
                 velocity.linear.x = speed
                 velocity.angular.z = -rotSpeed

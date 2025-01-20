@@ -33,3 +33,7 @@ launch:
     exec: "rviz2"
     name: "rviz2"
     args: "-d $(find-pkg-share grp_pibot26)/rviz_config/vision_config2.rviz"
+
+- node: 
+    pkg: "grp_pibot26"
+    exec: "emergency_stop"

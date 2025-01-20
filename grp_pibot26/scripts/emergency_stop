@@ -1,0 +1,54 @@
+#!/usr/bin/python3
+from std_msgs.msg import Bool
+import rclpy
+from rclpy.node import Node
+from kobuki_ros_interfaces.msg import BumperEvent
+from kobuki_ros_interfaces.msg import WheelDropEvent
+from kobuki_ros_interfaces.msg import ButtonEvent
+   
+class Emergency:
+    def initializeRosNode(self, rosNode ):
+        # Initialize publisher:
+        self.state = Bool() 
+        self.state.data = False
+        self._pubEmergency = rosNode.create_publisher(Bool, '/emergency', 10)
+        # Arrêts d'urgence
+        self._bumper = rosNode.create_subscription(BumperEvent, '/events/bumper', self.bumper_callback, 10)
+        self._wheel = rosNode.create_subscription(WheelDropEvent, '/events/wheel_drop', self.wheel_callback, 10)
+        # Redémarrer après un arrêt d'urgence
+        self._button = rosNode.create_subscription(ButtonEvent, '/events/button', self.button_callback, 10)
+            
+    def bumper_callback(self, msg):
+        if msg.state==1:
+            self.state.data=True
+        self._pubEmergency.publish(self.state)
+    
+    def wheel_callback(self, msg):
+        if msg.state==1:
+            self.state.data=True
+        self._pubEmergency.publish(self.state)
+
+    def button_callback(self, msg):
+        if msg.state==1:
+            self.state.data=False
+        self._pubEmergency.publish(self.state)
+    
+def main():
+    # Initialisation du noeud
+    rclpy.init()
+    node = Node( "emergency_stop" )
+
+    # Appel du contrôle
+    control= Emergency()
+    control.initializeRosNode( node )
+
+    # Infinite Loop:
+    rclpy.spin( node )
+
+    # Fin du programme
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__=='__main__':
+	main()
+
