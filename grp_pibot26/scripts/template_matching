@@ -14,7 +14,6 @@ class TemplateNode(Node):
         self._logger = rosNode.get_logger()
         # Publisher / Listener
         self.image_listener = rosNode.create_subscription(ImageCoord, '/ImageDepthCoord', self.match_callback, 10)
-        self.depth_publisher= rosNode.create_publisher(DepthCoord, '/DepthCoord', 10)
         self.stringvect_publisher= rosNode.create_publisher(StringVect, '/fantome', 10)
         return self
         
