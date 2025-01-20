@@ -54,7 +54,7 @@ class Realsense(Node):
         self.depth_publisher = self.create_publisher(Image, '/sensor_depth', 10)        #Publisher image de distance
         self.imagecoord_publisher = self.create_publisher(ImageCoord, '/ImageDepthCoord', 10)   #publisher image pour analyse template matching
         self.sound_publisher = self.create_publisher(Sound, '/commands/sound', 10)      #Publisher de son
-        self.goal_publisher = self.create_publisher(Vector3, '/position', 10)           #Publisher position du fantome
+        self.goal_publisher = self.create_publisher(StringVect, '/position_objet', 10)           #Publisher position du fantome
         self.matching_listener = self.create_subscription(StringVect, '/fantome', self.fantome_callback, 10)
 
         #ouverture du flux via la caméra
@@ -69,25 +69,25 @@ class Realsense(Node):
         self.pipeline.start(config)
 
     def fantome_callback(self, msg): 
+        #Recherche de la position du fantome détecté par rapport au robot
+        aligned_frames =  self.align.process(self.frames)
         if (msg.message.data == "fantome"):
-            #Recherche de la position du fantome détecté par rapport au robot
-            aligned_frames =  self.align.process(self.frames)
-
             sound = Sound()
             sound.value=0
             self.sound_publisher.publish(sound)
-            depth_frame = aligned_frames.get_depth_frame()
-            aligned_color_frame = aligned_frames.get_color_frame()
-            color_intrin = aligned_color_frame.profile.as_video_stream_profile().intrinsics
-            depth = depth_frame.get_distance(int(msg.vect.x), int(msg.vect.y))
+        depth_frame = aligned_frames.get_depth_frame()
+        aligned_color_frame = aligned_frames.get_color_frame()
+        color_intrin = aligned_color_frame.profile.as_video_stream_profile().intrinsics
+        depth = depth_frame.get_distance(int(msg.vect.x), int(msg.vect.y))
                     
-            dx ,dy, dz = rs.rs2_deproject_pixel_to_point(color_intrin, [int(msg.vect.x),int(msg.vect.y)], depth)
-            distance = math.sqrt(((dx)**2) + ((dy)**2) + ((dz)**2))
-            goal = Vector3()
-            goal.x=dx
-            goal.y=dy
-            goal.z=dz
-            self.goal_publisher.publish(goal)
+        dx ,dy, dz = rs.rs2_deproject_pixel_to_point(color_intrin, [int(msg.vect.x),int(msg.vect.y)], depth)
+        distance = math.sqrt(((dx)**2) + ((dy)**2) + ((dz)**2))
+        goal = StringVect()
+        goal.message.data=msg.message.data
+        goal.vect.x=dx
+        goal.vect.y=dy
+        goal.vect.z=dz
+        self.goal_publisher.publish(goal)
 
     def analyse_imgs(self):
         global color, rayon_detec

@@ -13,6 +13,8 @@ launch:
 - node: 
     pkg: "grp_pibot26"
     exec: "place_fantome"
+    param: 
+    - { name: "distanceMinParam", value: 1.0 }
 
 - node:
     pkg: "grp_pibot26"
