@@ -1,5 +1,6 @@
 Amélioration infrastructure 
-Placer plusieurs fantomes sur la carte et éviter les répétitions
-Mouvement intelligent
-Capture vidéo mapping
-Capture vidéo robot en mouvement dans map
+Placer plusieurs fantomes sur la carte et éviter les répétitions ok
+(Mouvement intelligent)
+Capture vidéo mapping 
+Capture vidéo robot en mouvement dans map 
+Créer un launch uniquement pour la vision 
