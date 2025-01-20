@@ -19,7 +19,7 @@ class TemplateNode(Node):
         return self
         
     def match_callback(self, msg): 
-        global template, template2
+        global template, template2, threshold
         self.bridge=CvBridge()
 
         image_gray = cv2.cvtColor(self.bridge.imgmsg_to_cv2(msg.image), cv2.COLOR_BGR2GRAY)
@@ -35,8 +35,8 @@ class TemplateNode(Node):
         res = cv2.matchTemplate(image_gray, template, cv2.TM_CCOEFF_NORMED)
         res2 = cv2.matchTemplate(image_gray, template2, cv2.TM_CCOEFF_NORMED)
 
-        threshold = 0.22
-        if(np.max(res)>threshold or np.max(res2)>threshold):
+        threshold_test = threshold
+        if(np.max(res)>threshold_test or np.max(res2)>threshold_test):
             fantomeMsg = StringVect()
             fantomeMsg.message.data = "fantome"
             fantomeMsg.vect.x = msg.vect.x
@@ -46,14 +46,16 @@ class TemplateNode(Node):
             self.stringvect_publisher.publish(fantomeMsg)
 
 def main():
-    global template, template2
+    global template, template2, threshold
 
     # Initialisation du noeud
     rclpy.init()
     node = Node( "match_template" )
 
     node.declare_parameter('filepath', "./template/template")
+    node.declare_parameter('threshold', 0.22)
     filepath = node.get_parameter('filepath').value
+    threshold = node.declare_parameter('threshold').value
 
     template = cv2.imread(filepath+'.jpg',0)
     template2 = cv2.imread(filepath+'2.jpg',0)

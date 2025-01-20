@@ -2,3 +2,4 @@ Amélioration infrastructure
 (Mouvement intelligent)
 Capture vidéo mapping 
 Capture vidéo robot en mouvement dans map 
+Marker rouge pour les bouteilles
