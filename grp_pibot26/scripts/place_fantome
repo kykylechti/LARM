@@ -39,10 +39,10 @@ class Finder(Node):
 
 
         # Node Attribute:
-        self.reference_frame='odom'
+        self.reference_frame='map'
         self.local_frame= 'base_link'
         self.global_type=String()
-        self.global_goal= Pose()
+        self.global_goal=Pose()
         self.global_goal.position.x= (float)(0.0)
         self.global_goal.position.y= (float)(0.0)
 

@@ -29,7 +29,7 @@ launch:
     exec: "template_matching"
     param: 
     - { name: "filepath", value: "$(find-pkg-share grp_pibot26)/template/template" }
-    - { name: "threshold", value: 0.22 }
+    - { name: "threshold", value: 0.5 }
 
 - node:
     pkg: "rviz2" 
