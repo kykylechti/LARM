@@ -3,6 +3,9 @@ launch:
 - include:
     file: "$(find-pkg-share grp_pibot26)/launch/challenge-1.launch.py"
 
+- include: 
+    file: "$(find-pkg-share grp_pibot26)/launch/start_slam_toolbox.launch.py"
+
 - node:
     pkg: "rviz2"
     exec: "rviz2"
@@ -11,8 +14,8 @@ launch:
 
 - node:
     pkg: "grp_pibot26"
-    exec: "direct_robot"
-    param: 
-    - { name: "defaultSpeed", value: 0.7 }
-    - { name: "defaultRotSpeed", value: 1.0 }
-    - { name: "topicVel", value: "/cmd_vel" }
+    exec: "robot_navigator"
+
+- node:
+    pkg: "grp_pibot26"
+    exec: "nav_to_pose"

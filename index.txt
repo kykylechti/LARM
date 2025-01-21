@@ -1,4 +1,10 @@
 Amélioration infrastructure 
 (Mouvement intelligent)
+
+face : w=1, z=0
+droite : z<0, w>0 environ 0,5 pour 90°
+gauche : z,w>0      idem
+arrière : w=0, z=1
+
 Capture vidéo mapping 
 Capture vidéo robot en mouvement dans map 

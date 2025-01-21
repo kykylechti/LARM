@@ -3,7 +3,7 @@ import rclpy
 import math
 import random
 from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import Twist, PoseWithCovariance
+from geometry_msgs.msg import Twist, PoseWithCovariance, Pose
 from std_msgs.msg import Bool, Int8
 import tf2_geometry_msgs 
 from rclpy.node import Node
@@ -39,7 +39,7 @@ def plus_court_chemin(grille, depart, arrivee):
         return None
 
     # Directions possibles : haut, bas, gauche, droite
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, 1), (1, 1), (1, -1), (-1, -1)]
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
     # Initialisation de la file pour BFS
     file = deque([(depart, [depart])])  # (position_actuelle, chemin)
@@ -83,23 +83,6 @@ def pointsClesChemin(chemin, depart):
         pointPrec = i
     return res
 
-# Exemple d'utilisation
-grille = [
-    [10, 20, 30, 90, 50],
-    [15, 90, 25, 80, 60],
-    [10, 70, 75, 85, 40],
-    [50, 90, 65, -1, 30],
-    [20, 30, 40, 50, 60]
-]
-
-depart = (0, 0)
-arrivee = (4, 4)
-
-chemin = plus_court_chemin(grille, depart, arrivee)
-if chemin:
-    print("Le plus court chemin est :", chemin)
-else:
-    print("Aucun chemin n'existe.")
 
 class SmartCtrl:
     def initializeRosNode(self, rosNode ):
@@ -124,10 +107,19 @@ class SmartCtrl:
 
         # Récupérer la position du robot
         self._positionSub = rosNode.create_subscription(PoseWithCovariance, '/pose', self.position_callback, 10)
+    
+        # Topic de publication de l'objectif de position
+
         self._map = Int8()
 
         self.reference_frame='map'
         self.local_frame= 'base_link'
+        self.orient=[]
+
+        self._robotPose = Pose()
+        self._robotPose.position.x=0
+        self._robotPose.position.y=0
+        
 
     def scan_callback(self, scanMsg ):
         pass
@@ -142,6 +134,7 @@ class SmartCtrl:
         self._map = msg.data
             
     def position_callback(self, msg):
+        self.orient= [msg.pose.orientation.z, msg.pose.orientation.w]
         try:
             stampedTransform= self.tfbuffer.lookup_transform(self.local_frame, self.reference_frame, currentTime)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException): 
@@ -165,6 +158,21 @@ class SmartCtrl:
                         j = self._map_larg + 1
 
         points = pointsClesChemin(chemin, depart)
+        for p in points: 
+            dirAct = (p[0]-depart[0], p[1]-depart[1])
+            if (dirAct==(-1, 0)): #derriere
+                orientV=[1.0, 0.0]
+            elif (dirAct==(1, 0)): #devant
+                orientV=[0.0, 1.0]
+            elif (dirAct==(0, -1)): #gauche
+                orientV=[0.5, 0.5]
+            elif (dirAct==(0, 1)): #droite
+                orientV=[-0.5, 0.5]
+            while((self.orient[0]<orientV[0]-0.05 or self.orient[0]>orientV[0]+0.05) and (self.orient[1]<orientV[1]-0.05 or self.orient[1]>orientV[1]+0.05)):
+                twist = Twist()
+                twist.angular.z = -1.0
+                self._pubVelocity.publish(twist)
+
 
 
 def main():
