@@ -1,8 +1,5 @@
 launch:
 
-- include:
-    file: "$(find-pkg-share grp_pibot26)/launch/start_slam_toolbox.launch.py"
-
 - node:
     pkg: "rviz2" 
     exec: "rviz2"

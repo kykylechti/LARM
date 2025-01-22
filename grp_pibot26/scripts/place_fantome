@@ -51,6 +51,7 @@ class Finder(Node):
         self._clock = rosNode.get_clock()
         self.positions = []
         
+    # Récupération de la position de l'objet detecté
     def goal_callback(self, msg): 
         self.global_type=msg.message.data
         self.global_goal.position.x=msg.vect.x
@@ -62,7 +63,7 @@ class Finder(Node):
         global id_marker, distanceMinParam
         tmpPose = Pose()
         currentTime= rclpy.time.Time()
-        # Get Transformation
+        # Transformation des coordonnées de l'objet de base_link vers map
         if(self.global_goal.position.x!=0 and self.global_goal.position.y!=0 ):
             try:
                 stampedTransform= self.tfbuffer.lookup_transform(self.local_frame, self.reference_frame, currentTime)
@@ -95,8 +96,8 @@ class Finder(Node):
                 localGoal.scale.y = 0.5
                 localGoal.scale.z = 0.5
 
+                # Selection de la couleur à partir du type d'objet detecté
                 if(self.global_type =="fantome") : 
-                # Set the color of the marker (green)
                     localGoal.color = ColorRGBA(r=0.0, g=1.0, b=0.0, a=1.0)
                     typeObjet = 0.0
                 else : 
@@ -119,6 +120,7 @@ class Finder(Node):
                     if(minDist<distanceMinParam and self.positions[distance.index(minDist)][2]==0.0):
                         place = False
                     elif(minDist<distanceMinParam and self.positions[distance.index(minDist)][2]==1.0):
+                        # Remplacement des points rouges par des points verts dans le cas de deux points detectés au même endroit
                         place = True
                         localGoal.id = distance.index(minDist)
                         id_marker -= 1

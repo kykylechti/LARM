@@ -57,7 +57,7 @@ class Realsense(Node):
         self.goal_publisher = self.create_publisher(StringVect, '/position_objet', 10)           #Publisher position du fantome
         self.matching_listener = self.create_subscription(StringVect, '/fantome', self.fantome_callback, 10)
 
-        #ouverture du flux via la caméra
+        # Ouverture du flux via la caméra
         self.pipeline = rs.pipeline()
         config = rs.config()
         config.enable_stream(rs.stream.color, 848, 480, rs.format.bgr8, 60)
@@ -69,7 +69,7 @@ class Realsense(Node):
         self.pipeline.start(config)
 
     def fantome_callback(self, msg): 
-        #Recherche de la position du fantome détecté par rapport au robot
+        # Recherche de la position du fantome détecté par rapport au robot
         aligned_frames =  self.align.process(self.frames)
         if (msg.message.data == "fantome"):
             sound = Sound()
@@ -82,6 +82,8 @@ class Realsense(Node):
                     
         dx ,dy, dz = rs.rs2_deproject_pixel_to_point(color_intrin, [int(msg.vect.x),int(msg.vect.y)], depth)
         distance = math.sqrt(((dx)**2) + ((dy)**2) + ((dz)**2))
+
+        # Envoi d'un type personnalisé contenant le type d'objet et les coordonnées du point
         goal = StringVect()
         goal.message.data=msg.message.data
         goal.vect.x=dx
@@ -98,7 +100,7 @@ class Realsense(Node):
 
         self.bridge=CvBridge()
 
-        #Paramètres de traitement d'image
+        # Paramètres de traitement d'image
         lo=np.array([color-20, 100, 50])
         hi=np.array([color+20, 255,255])
         kernel = np.ones((7, 7), np.uint8)
@@ -106,18 +108,18 @@ class Realsense(Node):
 
         image=cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
 
-        #Création du masque à appliquer à l'image
+        # Création du masque à appliquer à l'image
         mask=cv2.inRange(image, lo, hi)
         mask=cv2.erode(mask, kernel, iterations=1)
         mask=cv2.dilate(mask, kernel, iterations=1)
         image2=cv2.bitwise_and(color_image, color_image, mask= mask)
 
-        #Publication des images en couleur dans un topic dédié
+        # Publication des images en couleur dans un topic dédié
         msg_image = self.bridge.cv2_to_imgmsg(color_image,"bgr8")
         msg_image.header.stamp = self.get_clock().now().to_msg()
         msg_image.header.frame_id = "image"
 
-        #Publication des images de distance dans un topic dédié
+        # Publication des images de distance dans un topic dédié
         depth_frame = self.frames.first(rs.stream.depth)
         depth_image = np.asanyarray(depth_frame.get_data())
         
@@ -127,16 +129,16 @@ class Realsense(Node):
         msg_depth.header.stamp = msg_image.header.stamp
         msg_depth.header.frame_id = "depth"
 
-        #Recherche de contours dans l'image à laquelle le masque a été appliqué
+        # Recherche de contours dans l'image à laquelle le masque a été appliqué
         elements=cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         if len(elements) > 0:
             c=max(elements, key=cv2.contourArea)
             ((x, y), rayon)=cv2.minEnclosingCircle(c)
-            if rayon>rayon_detec:   #Condition de taille sur la détection d'éléments
+            if rayon>rayon_detec:   # Condition de taille sur la détection d'éléments
                 fantome=False
                 if(int(x)-int(rayon)>0 and int(x)+int(rayon)<848 and int(y)-int(rayon)>0 and int(y)+int(rayon)<480):  
 
-                    #Récupération d'un échantillon carré de l'image où se situe l'objet détecté
+                    # Récupération d'un échantillon carré de l'image où se situe l'objet détecté
                     echantillon = color_image[int(y)-int(rayon):int(y)+int(rayon),int(x)-int(rayon):int(x)+int(rayon),]
 
                     msgMatching = ImageCoord()
@@ -151,7 +153,7 @@ class Realsense(Node):
 
                     color_image=echantillon
 
-        
+        # Publication des images dans des topics dédiés
         self.image_publisher.publish(msg_image)
         self.depth_publisher.publish(msg_depth)
 

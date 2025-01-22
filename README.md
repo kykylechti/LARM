@@ -56,6 +56,9 @@ Les objets détectés sont placés sur la carte en rouge pour les objets verts q
 Le robot possède plusieurs fonctions d'arrêt avec les différents éléments qu'il possède : le bumper avant ainsi que les roules qui se relâchent.
 Les boutons du robot permettent de relancer le mouvement automatique.
 
+### Types de message personnalisés
+Création de message personnalisés pour certains topics 
+
 ### En cours de développement
 Mouvement intelligent basé sur un algorithme de recherche du plus court chemin. Une fois ce chemin trouvé, l'objectif est d'identifier les points où des changements de direction ont lieu, puis d'orienter le robot et de l'envoyer jusqu'au prochain point.
 Pour cela, nous cherchons les zones non identifiées sur la carte (-1) et sélectionnons les zones potentiellement accessibles pour le robot.
