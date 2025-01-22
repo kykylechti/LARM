@@ -119,6 +119,9 @@ class SmartCtrl:
         self._robotPose = Pose()
         self._robotPose.position.x=0
         self._robotPose.position.y=0
+
+        self._map_haut=0
+        self._map_larg=0
         
 
     def scan_callback(self, scanMsg ):
@@ -144,7 +147,7 @@ class SmartCtrl:
         self._robotPose = tf2_geometry_msgs.do_transform_pose(msg.pose, stampedTransform)
 
     def control_callback(self):
-
+        if(self._robotPose.position.x!=0 and self._robotPose.position.y!=0)
         depart = (int(self._robotPose.position.x), int(self._robotPose.position.y))
         grid = self._map
 
