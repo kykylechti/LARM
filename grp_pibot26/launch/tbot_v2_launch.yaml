@@ -3,6 +3,14 @@ launch:
 - include:
     file: "$(find-pkg-share grp_pibot26)/launch/start_slam_toolbox.launch.py"
 
+- node: 
+    pkg: "grp_pibot26"
+    exec: "direct_robot"
+    param: 
+    - { name: "defaultSpeed", value: 0.5 }
+    - { name: "defaultRotSpeed", value: 1.0 }
+    - { name: "topicVel", value: "/multi/cmd_nav" }
+
 - node:
     pkg: "grp_pibot26"
     exec: "vision"
@@ -32,10 +40,3 @@ launch:
 - node: 
     pkg: "grp_pibot26"
     exec: "emergency_stop"
-
-- node: 
-    pkg: "grp_pibot26"
-    exec: "smart_move"
-    param: 
-    - { name: "pourcentage", value: 30 }
-    - { name: "topicVel", value: "/multi/cmd_nav" }
