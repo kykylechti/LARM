@@ -48,7 +48,6 @@ class TemplateNode(Node):
             fantomeMsg.message.data = "bouteille"
     
         self.stringvect_publisher.publish(fantomeMsg)
-
 def main():
     global template, template2, threshold
 

@@ -54,9 +54,9 @@ class Finder(Node):
     # Récupération de la position de l'objet detecté
     def goal_callback(self, msg): 
         self.global_type=msg.message.data
-        self.global_goal.position.x=msg.vect.x
-        self.global_goal.position.y=msg.vect.y
-        self.global_goal.position.z=msg.vect.z
+        self.global_goal.position.x=msg.vect.z
+        self.global_goal.position.y=-msg.vect.x
+        self.global_goal.position.z=msg.vect.y
 
 
     def publish_goal(self):
@@ -66,7 +66,7 @@ class Finder(Node):
         # Transformation des coordonnées de l'objet de base_link vers map
         if(self.global_goal.position.x!=0 and self.global_goal.position.y!=0 ):
             try:
-                stampedTransform= self.tfbuffer.lookup_transform(self.local_frame, self.reference_frame, currentTime)
+                stampedTransform= self.tfbuffer.lookup_transform(self.reference_frame, self.local_frame, currentTime)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException): 
                 self._logger.info( f'Could not transform the goal into {self.local_frame}: Exception')
                 return
@@ -111,7 +111,7 @@ class Finder(Node):
                     for i in range (0,id_marker): 
                         res = math.sqrt(math.pow((localGoal.pose.position.x-self.positions[i][0]), 2)+math.pow((localGoal.pose.position.y-self.positions[i][1]), 2))
                         distance.append(res)
-                    minDist = min(distance)
+                    minDist = np.min(distance)
                 else: 
                     minDist = 10.0
 
@@ -137,7 +137,7 @@ class Finder(Node):
                 # Publish the marker
                 if(place):
                     self.pose_publisher.publish(localGoal)
-                    self._logger.info(f"distance : {minDist}, id : {localGoal.id}")
+                    self._logger.info(f"distance : {minDist}, id : {localGoal.id} type : {typeObjet}")
                     self.positions.append((localGoal.pose.position.x, localGoal.pose.position.y, typeObjet))
                     id_marker += 1
 

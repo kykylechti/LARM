@@ -143,7 +143,6 @@ class Realsense(Node):
 
                     msgMatching = ImageCoord()
                     msgMatching.image = self.bridge.cv2_to_imgmsg(echantillon,"bgr8")
-                    msgMatching.depth = msg_depth
                     msgMatching.rayon = rayon
                     msgMatching.vect.x = x
                     msgMatching.vect.y = y
