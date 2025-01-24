@@ -61,7 +61,7 @@ def plus_court_chemin(grille, depart, arrivee):
             if (0 <= voisin[0] < len(grille) and
                 0 <= voisin[1] < len(grille[0]) and
                 voisin not in visited and
-                0 <= grille[voisin[0]][voisin[1]] <= pourcentage):  # Condition d'accessibilité
+                0 <= grille[voisin[0]][voisin[1]] == 0):  # Condition d'accessibilité
                 
                 file.append((voisin, chemin + [voisin]))
                 visited.add(voisin)
@@ -73,7 +73,6 @@ def plus_court_chemin(grille, depart, arrivee):
 def pointsClesChemin(chemin, depart):
     pointPrec = depart
     dirPrec = (chemin[0]-pointPrec[0], chemin[1]-pointPrec[1])
-
     res = []
     for i in (chemin):
         dirAct = (i[0]-pointPrec[0], i[1]-pointPrec[1])
