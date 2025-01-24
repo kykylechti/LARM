@@ -12,10 +12,6 @@ launch:
     name: "rviz2"
     args: "-d $(find-pkg-share grp_pibot26)/rviz_config/simulation_config.rviz"
 
-- node:
-    pkg: "grp_pibot26"
-    exec: "robot_navigator"
-
 - node: 
     pkg: "grp_pibot26"
     exec: "direct_robot"

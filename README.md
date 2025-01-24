@@ -57,7 +57,7 @@ Le robot possède plusieurs fonctions d'arrêt avec les différents éléments q
 Les boutons du robot permettent de relancer le mouvement automatique.
 
 ### Types de message personnalisés
-Création de message personnalisés pour certains topics 
+Création de message personnalisés pour certains topics. Ces messages permettent par exemple de créer des flux d'image avec des coordonnées associées sur cette image. 
 
 ### En cours de développement
 Mouvement intelligent basé sur un algorithme de recherche du plus court chemin. Une fois ce chemin trouvé, l'objectif est d'identifier les points où des changements de direction ont lieu, puis d'orienter le robot et de l'envoyer jusqu'au prochain point.
